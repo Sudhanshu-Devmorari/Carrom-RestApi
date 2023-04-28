@@ -1,0 +1,7 @@
+python manage.py runsslserver --certificate /home/hp/test.example.com+3.pem --key /home/hp/test.example.com+3-key.pem
+
+
+daphne -e ssl:8000:privateKey=test.example.com+3-key.pem:certKey=test.example.com+3.pem CarromBE.asgi:application
+
+
+uvicorn CarromBE.asgi:application --ssl-keyfile=test.example.com+3-key.pem --ssl-certfile=test.example.com+3.pem --reload
