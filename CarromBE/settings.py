@@ -234,12 +234,6 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-
-# REST_AUTH = {
-#     'USE_JWT': True,
-#     'JWT_AUTH_COOKIE': 'jwt-auth',
-# }
-
 # HTTPS settings
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
@@ -261,6 +255,3 @@ CHANNEL_LAYERS = {
 
 # Cors
 CORS_ORIGIN_ALLOW_ALL = True
-# https://127.0.0.1:8000/accounts/facebook/login/callback/
-
-# daphne -e ssl:443:privateKey=/home/hp/test.example.com+3-key.pem:certKey=/home/hp/test.example.com+3.pem CarromBE.asgi:application
