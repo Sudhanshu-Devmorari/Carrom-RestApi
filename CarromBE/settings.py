@@ -234,12 +234,6 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-
-# REST_AUTH = {
-#     'USE_JWT': True,
-#     'JWT_AUTH_COOKIE': 'jwt-auth',
-# }
-
 # HTTPS settings
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
