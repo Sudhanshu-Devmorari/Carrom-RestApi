@@ -16,24 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-# from rest_auth.views import (
-#     LoginView, LogoutView, PasswordResetView, PasswordResetConfirmView,
-#     PasswordChangeView, PasswordResetConfirmView)
-# from rest_auth.registration.views import VerifyEmailView, RegisterView
-# from core.views import GoogleLogin
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
     path('accounts/', include('allauth.urls')),
-    # path('api-auth/', include('rest_framework.urls')),
-    # path('rest-auth/', include('rest_auth.urls')),
-    # path('dj-rest-auth/', include('dj_rest_auth.urls')),
-    # path('rest-auth/registration/', include('rest_auth.registration.urls')),
-    # path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    # path('api/rest-auth/', include('rest_auth.urls')),
-    # path('api/rest-auth/registration/', include('rest_auth.registration.urls')),
-    # path('api/rest-auth/google/', GoogleLogin.as_view(), name='google_login'),
 ]
 
 """

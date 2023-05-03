@@ -17,7 +17,6 @@ def country():
     try:
         response = reader.country(ip_address)
         country_name = response.country.name
-        print("--------> ", country_name)
         return country_name
     except geoip2.errors.AddressNotFoundError:
         print(f"ERROR : The IP address {ip_address} is not found in the database")
@@ -26,7 +25,6 @@ def country():
 
 class GoogleBackend(BaseBackend):
     def authenticate(self, request, **kwargs):
-        print("+++++++++++++++")
         if 'email' in kwargs:
             try:
                 user = UserData.objects.get(email=kwargs['email'])

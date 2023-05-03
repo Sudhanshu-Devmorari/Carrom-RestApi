@@ -215,10 +215,10 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {
             'access_type': 'online',
         },
-        'FIELDS': ['id', 'email', 'name', 'picture', 'locale'],  # Add 'locale'
+        'FIELDS': ['id', 'email', 'name', 'picture', 'locale'],
         'EXTRA_DATA': [
             ('picture', 'picture'),
-            ('locale', 'locale'),  # Add ('locale', 'locale')
+            ('locale', 'locale'), 
         ],
     },
     'facebook': {
@@ -258,9 +258,5 @@ CHANNEL_LAYERS = {
 }
 
 
-
 # Cors
 CORS_ORIGIN_ALLOW_ALL = True
-# https://127.0.0.1:8000/accounts/facebook/login/callback/
-
-# daphne -e ssl:443:privateKey=/home/hp/test.example.com+3-key.pem:certKey=/home/hp/test.example.com+3.pem CarromBE.asgi:application

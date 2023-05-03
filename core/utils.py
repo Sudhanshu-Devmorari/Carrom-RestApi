@@ -12,11 +12,9 @@ def country():
     reader = geoip2.database.Reader("/home/hp/Documents/Carrom-BE/GeoLite2-Country.mmdb")
 
     ip_address = get_public_ip_address()
-    # ip_address = "59.43.33.122"->china  # ip_address = "157.32.225.3"->India
     try:
         response = reader.country(ip_address)
         country_name = response.country.name
-        print("--------> ", country_name)
         return country_name
     except geoip2.errors.AddressNotFoundError:
         print(f"ERROR : The IP address {ip_address} is not found in the database")

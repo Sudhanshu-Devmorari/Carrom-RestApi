@@ -1,5 +1,5 @@
 from django.urls import path, re_path
-from core.views import (CheckView, GuestLoginView, GoogleLoginView, FacebookLoginView, ProfileView, GemsCoinsView, 
+from core.views import (CheckView, GuestLoginView, ProfileView, GemsCoinsView, 
                         GuestFriendSearchView, GuestFriendView, GiftSentView, LeaguesLeaderboardView, FriendsLeaderboardView,
                         CountryLeaderboardView, WorldLeaderboardView, GuestLogout, FaceBookFriendListView, LeaderboardWiningView,
                         UpdateStarLevelView, RemoveFriends)
@@ -7,12 +7,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
     path('guest-login/', GuestLoginView.as_view(), name='guest-login'),
-    path('google-login/', GoogleLoginView.as_view(), name='google-login'),
-    path('fb-login/', FacebookLoginView.as_view(), name='fb-login'),
-    # path('profile/', csrf_exempt(ProfileView.as_view()), name='profile'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('gemcoin/', GemsCoinsView.as_view(), name='gems-coins'),
-    # path('friends/', FriendsListAPIView.as_view(), name='fb-friends_list'),
     path('guest-friend-search/', GuestFriendSearchView.as_view(), name='guest-friend'),
     path('request-show/', GuestFriendView.as_view(), name='request-show'),
     path('gift-coins/', GiftSentView.as_view(), name='gift-coins'),
@@ -25,10 +21,6 @@ urlpatterns = [
     path('star-level/', UpdateStarLevelView.as_view(), name='star-level'),
     path('remove-friend/', RemoveFriends.as_view(), name='remove-friend'),
     path('logout/', GuestLogout.as_view(), name='logout'),
-
-
-    # re_path('api/register-by-access-token/' + r'social/(?P<backend>[^/]+)/$', RegisterByAccessTokenView.as_view(), name='register-token'),
-    # path('api/authentication-test/', AuthenticationTestView.as_view(), name='authentication-test'),
     path('', CheckView.as_view(), name='check'),
 ]
 

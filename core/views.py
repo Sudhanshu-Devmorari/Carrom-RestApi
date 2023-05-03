@@ -19,89 +19,26 @@ from rest_framework.permissions import IsAuthenticated
 
 
 class GuestLoginView(APIView):
-    # def post(self, request, format=None, *args, **kwargs):
     def get(self, request, format=None, *args, **kwargs):
-        # if request.data.get('login-type'):
-        #     # print("__##____--", request.data.get('login-type'))
-            guest_number = UserCount.objects.get(id=1)
-            count = guest_number.guest
-            # user_name = f'Guest_{count:09d}'
-            country_name = country()
+        guest_number = UserCount.objects.get(id=1)
+        count = guest_number.guest
+        country_name = country()
 
-            user = UserData(login_role='guest', username = f'Guest_{count:09d}', user_id = f'Guest_{count:09d}', country = country_name)
-            user.save()
-            gemcoin = GemsCoins(user=user, coins=5000, gems=20)
-            gemcoin.save()
-            guest_number.guest = count + 1
-            guest_number.save()
-            
-            user_dict = {
-                'login_role': user.login_role,
-                'username': user.username,
-                'user_id': user.user_id,
-                'country': user.country
-            }
-            login(request, user)
-            return Response(user_dict,status=status.HTTP_200_OK)
-        # else:
-        #     return Response("KEY ERROR: key not found in body", status=status.HTTP_404_NOT_FOUND)
-
-
-class GoogleLoginView(APIView):
-    def get(self, request, format=None, *args, **kwargs):
-        # print("++++++>>", request.user)
-
-        user = UserData.objects.get(username=request.user.username)
-        userpic = SocialAccount.objects.get(user=request.user)
-        # print("++++++>>",userpic.extra_data['given_name'])
-        if not user.user_id:
-            f_name = userpic.extra_data['given_name']
-            google_number = UserCount.objects.get(id=1)
-            count = google_number.google
-            # print("+=======>",user)
-            user.login_role = 'google'
-            user.country = country()
-            user.user_id = f'{f_name[:10]}_{count:05d}'
-            user.profile_url = userpic.extra_data['picture']
-            user.save()
-            gemcoin = GemsCoins(user=user, coins=5000, gems=20)
-            gemcoin.save()
-            google_number.google = count + 1
-            google_number.save()
-
-            # serializer = UserSerializer(data=user)
-            # if serializer.is_valid():
-            #     return Response(create_response(status.HTTP_200_OK, "Successfully logged in with Google", data=serializer.data), status=status.HTTP_200_OK)
-            # else:
-            #     return Response(data=serializer.errors)
-            return Response(user.username,status=status.HTTP_200_OK)
-        return Response(user.username,status=status.HTTP_200_OK)
-
-
-class FacebookLoginView(APIView):
-    def get(self, request, format=None, *args, **kwargs):
-        print("++++++>>", request.user)
-
-        user = UserData.objects.get(username=request.user.username)
-        userdata = SocialAccount.objects.get(user=request.user)
-        # print("++++++>>",userdata.extra_data['first_name'])
-        if not user.user_id:
-            # f_name = userdata.extra_data['first_name']
-            f_name = userdata.extra_data['first_name']
-            fb_number = UserCount.objects.get(id=1)
-            count = fb_number.facebook
-            # print("+=======>",user)
-            user.login_role = 'facebook'
-            user.country = country()
-            user.user_id = f'{f_name[:10]}_{count:05d}'
-            user.profile_url = userdata.extra_data['picture']['data']['url']
-            user.save()
-            gemcoin = GemsCoins(user=user, coins=5000, gems=120)
-            gemcoin.save()
-            fb_number.facebook = count + 1
-            fb_number.save()
-            return Response(user.username,status=status.HTTP_200_OK)
-        return Response(user.username,status=status.HTTP_200_OK)
+        user = UserData(login_role='guest', username = f'Guest_{count:09d}', user_id = f'Guest_{count:09d}', country = country_name)
+        user.save()
+        gemcoin = GemsCoins(user=user, coins=5000, gems=20)
+        gemcoin.save()
+        guest_number.guest = count + 1
+        guest_number.save()
+        
+        user_dict = {
+            'login_role': user.login_role,
+            'username': user.username,
+            'user_id': user.user_id,
+            'country': user.country
+        }
+        login(request, user)
+        return Response(user_dict,status=status.HTTP_200_OK)
 
 
 # @method_decorator(csrf_exempt, name='dispatch')
@@ -121,51 +58,27 @@ class ProfileView(APIView):
         data = serializer.data
         return Response(data=data, status=status.HTTP_200_OK)
 
-
     """
     update the authenticated user's username data.
     """
     def post(self, request, format=None, *args, **kwargs):
-        data = {} 
-        # print("*********", request.user)
-        # print("*********", request.data.get('username'))
+        data = {}
         if request.data.get('username'):
             user = UserData.objects.get(username=request.user.username)
             user.username = request.data.get('username')
             user.save()
-            # serializer = UserSerializer(user, data=request.data, partial=True)
-            # if serializer.is_valid():
-                # serializer.save()
-                # return Response(serializer.data)
-            # else:
-                # return Response(serializer.errors)
             serializer = UserSerializer(user)
             data = serializer.data
-            # return Response(data=data, status=status.HTTP_200_OK)
             return Response(create_response(status.HTTP_200_OK,"Username sucessfully updated.", data=data),status=status.HTTP_200_OK)
         else:
             return Response(create_response(status.HTTP_404_NOT_FOUND,"Username not found."),status=status.HTTP_404_NOT_FOUND)
-
-
-# class ProfileView(generics.RetrieveUpdateAPIView):
-#     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
-#     serializer_class = UserSerializer
-#     permission_classes = IsAuthenticated
-
-#     def get_object(self):
-#         return UserData.objects.get(username=self.request.user.username)
-
-#     def update(self, request, *args, **kwargs):
-#         if 'username' not in request.data:
-#             return Response(create_response(status.HTTP_404_NOT_FOUND,"Username not found."), status=status.HTTP_404_NOT_FOUND)
-#         return super().update(request, *args, **kwargs)
 
 
 class GemsCoinsView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
 
     def get(self, request, format=None, *args, **kwargs):
-        print("******", request.user)
+        # print("******", request.user)
         data = {}
         user = GemsCoins.objects.get(user=request.user)
         serializer = GemsCoinsSerializer(user)
@@ -173,8 +86,7 @@ class GemsCoinsView(APIView):
         return Response(data=data, status=status.HTTP_200_OK)
 
     def post(self, request, format=None, *args, **kwargs):
-        print("******", request.user)
-        # print("******", request.data.get('operation').lower())
+        # print("******", request.user)
         user = GemsCoins.objects.get(user=request.user)
         if (request.data.get('operation')).lower() == 'add':
             if request.data.get('coin'):
@@ -200,7 +112,6 @@ class GemsCoinsView(APIView):
                     return Response(create_response(status.HTTP_404_NOT_FOUND,"Not enough Coins?"),status=status.HTTP_404_NOT_FOUND)
             if request.data.get('gem'):
                 user.gems = user.gems - int(request.data.get('gem'))
-                print("****user.gem", user.gems)
                 if user.gems >= 0:
                     user.save()
                     serializer = GemsCoinsSerializer(user)
@@ -209,32 +120,9 @@ class GemsCoinsView(APIView):
                 else:
                     return Response(create_response(status.HTTP_404_NOT_FOUND,"Not enough Gems?"),status=status.HTTP_404_NOT_FOUND)
 
-        # serializer = GemsCoinsSerializer(user)
-        # data = serializer.data
-        # return Response(data=data, status=status.HTTP_200_OK)
-
-
-"""from core.custom_authentication import CustomFacebookOAuth2Adapter
-class FriendsListAPIView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request):
-        social_account = request.user.socialaccount_set.filter(provider='facebook').first()
-        if social_account:
-            adapter = CustomFacebookOAuth2Adapter(request)
-            friends = adapter.get_friends(social_account.socialtoken_set.first().token)
-        else:
-            friends = []
-        return Response({'friends': friends})"""
-
-# class SearchFriendView(APIView):
-#     def get(self, request, format=None, *args, **kwargs):
-#         print("-------", request.user)
-
 
 class GuestFriendSearchView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
-
     """
     Search the guest user with user-id if user exist
     """
@@ -264,9 +152,7 @@ class GuestFriendSearchView(APIView):
         else:
             return Response(serializer.errors)'''
         data = {}
-        # if request.data.get('sender'):
         if request.data.get('receiver'):
-            # sender = UserData.objects.get(username=request.data.get('sender'))
             receiver = UserData.objects.get(username=request.data.get('receiver'))
 
             req = Friends(sender=request.user, receiver=receiver, friend_status='pending') 
@@ -276,20 +162,7 @@ class GuestFriendSearchView(APIView):
             return Response(data=data, status=status.HTTP_200_OK)
         else:
             return Response(create_response(status.HTTP_404_NOT_FOUND,"receiver not found."), status=status.HTTP_404_NOT_FOUND)
-        # else:
-        #     return Response(create_response(status.HTTP_404_NOT_FOUND,"sender not found."), status=status.HTTP_404_NOT_FOUND)
 
-
-"""class GuestFriendView(APIView):
-    def get(self, request, format=None, *args, **kwargs):
-        print("-------", request.user)
-        data = []
-        users = Friends.objects.filter(receiver=request.user, friend_status='pending')
-        for user in users:
-            sender_serializer = UserSerializer(user.sender)
-            sender_username = sender_serializer.data['username']
-            data.append(sender_username)
-        return Response(data=dict(enumerate(data)), status=status.HTTP_200_OK)"""
 
 class GuestFriendView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
@@ -298,7 +171,7 @@ class GuestFriendView(APIView):
     And also retrive the user list who request for gift.
     """
     def get(self, request, format=None, *args, **kwargs):
-        print("-------", request.user)
+        # print("-------", request.user)
         data = {}
         friend_requests = []
         if Friends.objects.filter(receiver=request.user, friend_status='pending').exists():
@@ -309,7 +182,6 @@ class GuestFriendView(APIView):
 
         store = []
         if GiftSent.objects.filter(coin_receiver=request.user, flag=False).exists():
-            # print("*********")
             user = GiftSent.objects.filter(coin_receiver=request.user, flag=False)
             for ur in user:
                 detail = {
@@ -317,8 +189,6 @@ class GuestFriendView(APIView):
                     'coin':ur.coin
                 }
                 store.append(detail)
-                # serializer = GiftSentSerializer(ur)
-                # pass
             data['coin_gift'] = store
 
         gift_requests = []
@@ -328,15 +198,13 @@ class GuestFriendView(APIView):
                 gift_requests.append(user.request_sender.username)
             data['gift_requests'] = gift_requests
 
-        # return Response(data=dict(enumerate(data)), status=status.HTTP_200_OK)
         return Response(data=data, status=status.HTTP_200_OK)
     
     """
     Accepting or Rejecting friend requests or gifts for authenticated users.
     """
     def post(self, request, format=None, *args, **kwargs):
-        print("-------", request.user)
-        # print("----",request.data.get('user'),'-------',request.data.get('status'))
+        # print("-------", request.user)
         if request.data.get('status'):
             if request.data.get('user'):
                 if Friends.objects.filter(sender__username = request.data.get('user')).exists():
@@ -351,7 +219,6 @@ class GuestFriendView(APIView):
             else:
                 return Response(create_response(status.HTTP_404_NOT_FOUND,"There is no user available. Please provide one."), status=status.HTTP_404_NOT_FOUND)
         elif request.data.get('coin'):
-            print("**********", request.data.get('coin'))
             if request.data.get('coin-sender'):
                 gift = GiftSent.objects.get(coin_sender__username=request.data.get('coin-sender'), coin_receiver=request.user)
                 gift.flag = True
@@ -365,7 +232,6 @@ class GuestFriendView(APIView):
             else:
                 return Response(create_response(status.HTTP_404_NOT_FOUND,"Coin-Sender not found."), status=status.HTTP_404_NOT_FOUND)
         elif request.data.get('request-sender'):
-            print("**********", request.data.get('request-sender'))
             req_gift = RequestGift.objects.get(request_sender__username=request.data.get('request-sender'), request_receiver=request.user)
             req_gift.flag = True
             req_gift.save()
@@ -384,7 +250,7 @@ class GiftSentView(APIView):
     Retrieve the friend list of a user whose friend status is Accept.
     """
     def get(self, request, format=None, *args, **kwargs):
-        print('-----', request.user)
+        # print('-----', request.user)
         all_users = []
         if Friends.objects.filter(sender=request.user, friend_status='accept').exists():
             users = Friends.objects.filter(sender=request.user, friend_status='accept')
@@ -402,7 +268,6 @@ class GiftSentView(APIView):
             for i in range(len(user.extra_data['friends']['data'])):
                 friend_id = user.extra_data['friends']['data'][i]['id']
                 ur = SocialAccount.objects.get(uid=friend_id)
-                # print("=========",ur.user.username)
                 all_users.append(ur.user.username)
         data = {}
         data['user'] = all_users
@@ -412,16 +277,8 @@ class GiftSentView(APIView):
     Send the coins to your friends as gifts.
     """
     def post(self, request, format=None, *args, **kwargs):
-        print('----', request.user)
-        # serializer = GiftSentSerializer(data=request.data)
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response(serializer.data)
-        # else:
-        #     return Response(serializer.errors)
-        # print("*******")
+        # print('----', request.user)
         if request.data.get('coin'):
-            # if request.data.get('coin_sender'):
             if request.data.get('coin_receiver'):
                 if UserData.objects.filter(username=request.data.get('coin_receiver')).exists():
                     user = UserData.objects.get(username=request.data.get('coin_receiver'))
@@ -449,7 +306,6 @@ class RequestGiftView(APIView):
                 serializer = RequestGiftSerializer(req_gift)
                 data = serializer.data
                 return Response(data=data, status=status.HTTP_200_OK)
-                # return Response(create_response(status.HTTP_200_OK,"Username sucessfully updated.", data=data),status=status.HTTP_200_OK)
             else:
                 return Response(create_response(status.HTTP_404_NOT_FOUND,"Provide valid request_receiver."), status=status.HTTP_404_NOT_FOUND)
         else:
@@ -489,7 +345,6 @@ class LeaguesLeaderboardView(APIView):
                                 data.append(detail)
                         return Response(data=dict(enumerate(data)), status=status.HTTP_200_OK)
                     else:
-                        print("---------")
                         users = Leaderboard.objects.filter(user__star_level__range=(int(key.split(',')[0]), int(key.split(',')[-1]))).order_by('-lastweek_coins')
                         data = []
                         for user in users:
@@ -506,10 +361,7 @@ class FriendsLeaderboardView(APIView):
     API use for retrieve the user's friends list for the Friends Leaderboard.
     """
     def get(self, request, format=None, *args, **kwargs):
-        # print("***", request.user,"-------")
         all_users = []
-        # all_users.append(request.user.username)
-        # if request.user.login_role=='guest':
         if Friends.objects.filter(sender=request.user, friend_status='accept').exists():
             users = Friends.objects.filter(sender=request.user, friend_status='accept')
             for user in users:
@@ -519,22 +371,18 @@ class FriendsLeaderboardView(APIView):
             for user in users:
                 all_users.append(user.sender.username)
 
-        # elif request.user.login_role=='facebook':
         if SocialAccount.objects.filter(user=request.user).exists():
             user = SocialAccount.objects.get(user=request.user)
-            # print("---------GET user---------",user.extra_data['friends']['data'][0]['name'])
             for i in range(len(user.extra_data['friends']['data'])):
                 user = UserData.objects.get(first_name=user.extra_data['friends']['data'][i]['name'])
                 all_users.append(user.username)
 
-        print("--------", all_users)
         data = []
         if not request.query_params.get('key'):
             """
             Depending on current week coins.
             """
             for users in all_users:
-                # user_obj = UserData.objects.get(username=users)
                 coin_obj = Leaderboard.objects.get(user__username=users)
                 
                 detail = {
@@ -571,7 +419,7 @@ class CountryLeaderboardView(APIView):
     API use for retrieve the user's list country wise for the Country Leaderboard.
     """
     def get(self, request, format=None, *args, **kwargs):
-        print("***", request.user,"***", request.user.country)
+        # print("***", request.user,"***", request.user.country)
         data = []
         if not request.query_params.get('key'):
             coin_obj = Leaderboard.objects.filter(user__country=request.user.country).order_by('-weekly_coins')
@@ -598,7 +446,7 @@ class WorldLeaderboardView(APIView):
     API use for retrieve users lists for the World Leaderboard.
     """
     def get(self, request, format=None, *args, **kwargs):
-        print("***", request.user,"***")
+        # print("***", request.user,"***")
         data = []
         if not request.query_params.get('key'):
             coin_obj = Leaderboard.objects.all().order_by('-weekly_coins')
@@ -622,12 +470,12 @@ class WorldLeaderboardView(APIView):
 
 class FaceBookFriendListView(APIView):
     def get(self, request, format=None, *args, **kwargs):
-        print("***", request.user,"***")
+        # print("***", request.user,"***")
         friends = []
         user = SocialAccount.objects.get(user=request.user)
         print("---------GET user---------",user.extra_data['friends']['data'][0]['id'])
         ur = SocialAccount.objects.get(uid=user.extra_data['friends']['data'][0]['id'])
-        print("=========",ur.user.username)
+
         for i in range(len(user.extra_data['friends']['data'])):
             friends.append(user.extra_data['friends']['data'][i]['name'])
             return Response(data=dict(enumerate(friends)), status=status.HTTP_200_OK)
@@ -640,8 +488,6 @@ class RemoveFriends(APIView):
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"-------")
         all_users = []
-        # all_users.append(request.user.username)
-        # if request.user.login_role=='guest':
         if Friends.objects.filter(sender=request.user, friend_status='accept').exists():
             users = Friends.objects.filter(sender=request.user, friend_status='accept')
             for user in users:
@@ -651,10 +497,8 @@ class RemoveFriends(APIView):
             for user in users:
                 all_users.append(user.sender.username)
 
-        # elif request.user.login_role=='facebook':
         if SocialAccount.objects.filter(user=request.user).exists():
             user = SocialAccount.objects.get(user=request.user)
-            # print("---------GET user---------",user.extra_data['friends']['data'][0]['name'])
             for i in range(len(user.extra_data['friends']['data'])):
                 user = UserData.objects.get(first_name=user.extra_data['friends']['data'][i]['name'])
                 all_users.append(user.username)
@@ -665,9 +509,8 @@ class RemoveFriends(APIView):
     Remove friend from Friends List.
     """
     def post(self, request, format=None, *args, **kwargs):
-        print("***", request.user,"***")
+        # print("***", request.user,"***")
         if request.data.get("username"):
-            print("***", request.data.get("username"),"***")
             user_obj = UserData.objects.get(username=request.data.get("username"))
             if Friends.objects.filter(sender=user_obj, receiver=request.user, friend_status='accept').exists():
                 instance = Friends.objects.filter(sender=user_obj, receiver=request.user, friend_status='accept')
@@ -694,7 +537,6 @@ class LeaderboardWiningView(APIView):
                     user_obj.total_win_match += 1
                     user_obj.save()
                     
-                    # win_obj = Leaderboard.objects.get_or_create(user=user_obj)
                     if Leaderboard.objects.filter(user=user_obj).exists():
                         win_obj = Leaderboard.objects.get(user=user_obj)
                         win_obj.weekly_coins += int(request.data.get('coins'))
@@ -713,7 +555,7 @@ class LeaderboardWiningView(APIView):
 
 class GuestLogout(APIView):
     def get(self, request, format=None, *args, **kwargs):
-        print("***", request.user,"***")
+        # print("***", request.user,"***")
         logout(request)
         return Response(create_response(status.HTTP_200_OK, "User successfully logged Out..."), status=status.HTTP_200_OK)
 
@@ -721,7 +563,7 @@ class GuestLogout(APIView):
 # For update the user star level:
 class UpdateStarLevelView(APIView):
     def get(self, request, format=None, *args, **kwargs):
-        print("***", request.user,"***")
+        # print("***", request.user,"***")
         user_obj = UserData.objects.get(username=request.user.username)
         user_obj.star_level += 1
         user_obj.save()
@@ -730,11 +572,5 @@ class UpdateStarLevelView(APIView):
 
 class CheckView(APIView):
     def get(self, request):
-        # user = UserData.objects.get(username=request.user.username)
-        # user = SocialAccount.objects.get(user=request.user)
-        # print("---------GET user---------",user.extra_data['picture'])
-        # print("---------GET user---------",type(user.extra_data))
-        print("-------",request.user)
-        # print("---------GET---------",request.body)
-        # print("---------GET---------",request.data)
+        # print("-------",request.user)
         return Response(request.user.username,status=status.HTTP_200_OK)
