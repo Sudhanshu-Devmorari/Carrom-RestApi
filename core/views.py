@@ -263,8 +263,8 @@ class GiftSentView(APIView):
         """
         if user login role is facebook.
         """
-        if SocialAccount.objects.filter(user=request.user).exists():
-            users = SocialAccount.objects.get(user=request.user)
+        if request.user.login_role == 'facebook' and SocialAccount.objects.filter(user=request.user).exists():
+            user = SocialAccount.objects.get(user=request.user)
             for i in range(len(user.extra_data['friends']['data'])):
                 friend_id = user.extra_data['friends']['data'][i]['id']
                 ur = SocialAccount.objects.get(uid=friend_id)
@@ -371,7 +371,7 @@ class FriendsLeaderboardView(APIView):
             for user in users:
                 all_users.append(user.sender.username)
 
-        if SocialAccount.objects.filter(user=request.user).exists():
+        if request.user.login_role == 'facebook' and SocialAccount.objects.filter(user=request.user).exists():
             user = SocialAccount.objects.get(user=request.user)
             for i in range(len(user.extra_data['friends']['data'])):
                 user = UserData.objects.get(first_name=user.extra_data['friends']['data'][i]['name'])
@@ -472,13 +472,15 @@ class FaceBookFriendListView(APIView):
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"***")
         friends = []
-        user = SocialAccount.objects.get(user=request.user)
-        print("---------GET user---------",user.extra_data['friends']['data'][0]['id'])
-        ur = SocialAccount.objects.get(uid=user.extra_data['friends']['data'][0]['id'])
+        if request.user.login_role == 'facebook' and SocialAccount.objects.filter(user=request.user).exists():
+            user = SocialAccount.objects.get(user=request.user)
+            # print("---------GET user---------",user.extra_data['friends']['data'][0]['id'])
+            # ur = SocialAccount.objects.get(uid=user.extra_data['friends']['data'][0]['id'])
 
-        for i in range(len(user.extra_data['friends']['data'])):
-            friends.append(user.extra_data['friends']['data'][i]['name'])
-            return Response(data=dict(enumerate(friends)), status=status.HTTP_200_OK)
+            for i in range(len(user.extra_data['friends']['data'])):
+                friends.append(user.extra_data['friends']['data'][i]['name'])
+      
+        return Response(data=dict(enumerate(friends)), status=status.HTTP_200_OK)
 
 class RemoveFriends(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
@@ -497,7 +499,7 @@ class RemoveFriends(APIView):
             for user in users:
                 all_users.append(user.sender.username)
 
-        if SocialAccount.objects.filter(user=request.user).exists():
+        if request.user.login_role == 'facebook' and SocialAccount.objects.filter(user=request.user).exists():
             user = SocialAccount.objects.get(user=request.user)
             for i in range(len(user.extra_data['friends']['data'])):
                 user = UserData.objects.get(first_name=user.extra_data['friends']['data'][i]['name'])
