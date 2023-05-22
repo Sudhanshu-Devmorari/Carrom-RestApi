@@ -2,7 +2,7 @@ from django.urls import path, re_path
 from core.views import (CheckView, GuestLoginView, ProfileView, GemsCoinsView, 
                         GuestFriendSearchView, GuestFriendView, GiftSentView, LeaguesLeaderboardView, FriendsLeaderboardView,
                         CountryLeaderboardView, WorldLeaderboardView, GuestLogout, FaceBookFriendListView, LeaderboardWiningView,
-                        UpdateStarLevelView, RemoveFriends)
+                        UpdateStarLevelView, RemoveFriends, RequestGiftView)
 from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
@@ -22,6 +22,7 @@ urlpatterns = [
     path('remove-friend/', RemoveFriends.as_view(), name='remove-friend'),
     path('logout/', GuestLogout.as_view(), name='logout'),
     path('', CheckView.as_view(), name='check'),
+    path('request-gift', RequestGiftView.as_view(), name='request-gift'),
 ]
 
 """
