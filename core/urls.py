@@ -22,7 +22,7 @@ urlpatterns = [
     path('remove-friend/', RemoveFriends.as_view(), name='remove-friend'),
     path('logout/', GuestLogout.as_view(), name='logout'),
     path('', CheckView.as_view(), name='check'),
-    path('request-gift', RequestGiftView.as_view(), name='request-gift'),
+    path('request-gift/', RequestGiftView.as_view(), name='request-gift'),
 ]
 
 """

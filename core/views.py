@@ -267,8 +267,8 @@ class GiftSentView(APIView):
             user = SocialAccount.objects.get(user=request.user)
             for i in range(len(user.extra_data['friends']['data'])):
                 friend_id = user.extra_data['friends']['data'][i]['id']
-                ur = SocialAccount.objects.get(uid=friend_id)
-                all_users.append(ur.user.username)
+                ur = SocialAccount.objects.filter(uid=friend_id).first()
+                if ur: all_users.append(ur.user.username) 
         data = {}
         data['user'] = all_users
         return Response(data=data, status=status.HTTP_200_OK) 
@@ -374,8 +374,8 @@ class FriendsLeaderboardView(APIView):
         if request.user.login_role == 'facebook' and SocialAccount.objects.filter(user=request.user).exists():
             user = SocialAccount.objects.get(user=request.user)
             for i in range(len(user.extra_data['friends']['data'])):
-                user = UserData.objects.get(first_name=user.extra_data['friends']['data'][i]['name'])
-                all_users.append(user.username)
+                friend_user = UserData.objects.filter(first_name=user.extra_data['friends']['data'][i]['name']).first()
+                if friend_user: all_users.append(friend_user.username)
 
         data = []
         if not request.query_params.get('key'):
@@ -383,13 +383,14 @@ class FriendsLeaderboardView(APIView):
             Depending on current week coins.
             """
             for users in all_users:
-                coin_obj = Leaderboard.objects.get(user__username=users)
+                coin_obj = Leaderboard.objects.filter(user__username=users).first()
                 
-                detail = {
-                        'username':coin_obj.user.username,
-                        'coins':coin_obj.weekly_coins
-                    }
-                data.append(detail)
+                if coin_obj:
+                    detail = {
+                            'username':coin_obj.user.username,
+                            'coins':coin_obj.weekly_coins
+                        }
+                    data.append(detail)
 
             # sort the data by coins in descending order
             data = sorted(data, key=lambda k: k['coins'], reverse=True)
@@ -400,13 +401,14 @@ class FriendsLeaderboardView(APIView):
             Depending on last week coins
             """
             for users in all_users:
-                coin_obj = Leaderboard.objects.get(user__username=users)
+                coin_obj = Leaderboard.objects.filter(user__username=users).first()
                 
-                detail = {
-                        'username':coin_obj.user.username,
-                        'coins':coin_obj.lastweek_coins
-                    }
-                data.append(detail)
+                if coin_obj:
+                    detail = {
+                            'username':coin_obj.user.username,
+                            'coins':coin_obj.lastweek_coins
+                        }
+                    data.append(detail)
 
             # sort the data by coins in descending order
             data = sorted(data, key=lambda k: k['coins'], reverse=True)

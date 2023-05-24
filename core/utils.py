@@ -9,7 +9,7 @@ def get_public_ip_address():
     return response.text.strip()
 
 def country():
-    reader = geoip2.database.Reader("/home/hp/Documents/Carrom-BE/GeoLite2-Country.mmdb")
+    reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
 
     ip_address = get_public_ip_address()
     try:
