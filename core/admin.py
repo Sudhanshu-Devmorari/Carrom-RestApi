@@ -1,5 +1,5 @@
 from django.contrib import admin
-from core.models import UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift
+from core.models import UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift, Match, MatchUser
 
 # Register your models here.
 
@@ -30,3 +30,11 @@ class LeaderboardAdmin(admin.ModelAdmin):
 @admin.register(RequestGift)
 class RequestGiftdAdmin(admin.ModelAdmin):
     list_display = ('request_sender','request_receiver','flag')
+
+@admin.register(Match)
+class MatchdAdmin(admin.ModelAdmin):
+    list_display = ('code','status','created_by')
+
+@admin.register(MatchUser)
+class MatchUserdAdmin(admin.ModelAdmin):
+    list_display = ('match','user','status')

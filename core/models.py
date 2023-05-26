@@ -73,3 +73,17 @@ class UserCount(models.Model):
     guest = models.IntegerField(null=True, blank=True, default=0)
     facebook = models.IntegerField(null=True, blank=True, default=0)
     google = models.IntegerField(null=True, blank=True, default=0)
+
+
+class Match(models.Model):
+    code = models.CharField(max_length=50)
+    status = models.IntegerField(default=1) # 1: active,0: deactivate
+    created_by = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name='match_created_by')
+    created = models.DateTimeField(auto_now_add=True)
+
+
+class MatchUser(models.Model):
+    match = models.ForeignKey(Match, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name='match_user')
+    status = models.IntegerField(default=1) # 1: active,0: deactivate
+    created = models.DateTimeField(auto_now_add=True)
