@@ -71,16 +71,20 @@ class GuestLoginView(APIView):
 # @method_decorator(csrf_exempt, name='dispatch')
 class ProfileView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
+    
     """
     get the authenticated user profile data.
     """
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
-        # print("******", request.user)
         data = {}
-        if request.query_params.get('username'):
-            user = UserData.objects.get(username=request.query_params.get('username'))
-        else:
-            user = UserData.objects.get(username=request.user.username)
+        
+        username = request.query_params.get('username') if request.query_params.get('username') else request.user.username
+        user = UserData.objects.filter(username=username).first() 
+        if not user:
+            return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
+        
         serializer = UserSerializer(user)
         data = serializer.data
         return Response(data=data, status=status.HTTP_200_OK)
@@ -88,12 +92,20 @@ class ProfileView(APIView):
     """
     update the authenticated user's username data.
     """
+    @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
         data = {}
         if request.data.get('username'):
+            # Validate uniqueness of username
+            AlredayExist = UserData.objects.filter(~Q(id=request.user.id), username=request.data.get('username')).exists()
+            if AlredayExist:
+                return Response(create_response(status.HTTP_409_CONFLICT,"A user with this name already exists. Please try another name.", data=data), status=status.HTTP_409_CONFLICT)
+
+            # Update username
             user = UserData.objects.get(username=request.user.username)
             user.username = request.data.get('username')
             user.save()
+
             serializer = UserSerializer(user)
             data = serializer.data
             return Response(create_response(status.HTTP_200_OK,"Username sucessfully updated.", data=data),status=status.HTTP_200_OK)
@@ -103,17 +115,18 @@ class ProfileView(APIView):
 
 class GemsCoinsView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
 
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
-        # print("******", request.user)
         data = {}
         user = GemsCoins.objects.get(user=request.user)
         serializer = GemsCoinsSerializer(user)
         data = serializer.data
         return Response(data=data, status=status.HTTP_200_OK)
 
+    @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
-        # print("******", request.user)
         user = GemsCoins.objects.get(user=request.user)
         if (request.data.get('operation')).lower() == 'add':
             if request.data.get('coin'):
@@ -150,26 +163,29 @@ class GemsCoinsView(APIView):
 
 class GuestFriendSearchView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
+
     """
     Search the guest user with user-id if user exist
     """
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
-        print("******",request.user)
-        if request.query_params.get('user_id'):
-            if UserData.objects.filter(user_id = request.query_params.get('user_id')).exists():
-                data = {}
-                user = UserData.objects.get(user_id = request.query_params.get('user_id'))
-                serializer = UserSerializer(user)
-                data = serializer.data
-                return Response(data=data, status=status.HTTP_200_OK)
-            else:
-                return Response(create_response(status.HTTP_404_NOT_FOUND,f"User not found with {request.query_params.get('user_id')}."), status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response(create_response(status.HTTP_404_NOT_FOUND,"User_id not found."), status=status.HTTP_404_NOT_FOUND)
+        data = {}
+
+        # Validate user_id
+        user = UserData.objects.filter(user_id=request.query_params.get('user_id')).first()
+        if not user:
+            return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
+        
+        # Return user data
+        serializer = UserSerializer(user)
+        data = serializer.data
+        return Response(data=data, status=status.HTTP_200_OK)
 
     """
     Send the request to user who found previously.
     """
+    @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
         print("------sender-",request.data.get('sender'),'--------receiver-', request.data.get('receiver'))
         '''serializer = FriendsSerializer(data=request.data)
@@ -179,26 +195,37 @@ class GuestFriendSearchView(APIView):
         else:
             return Response(serializer.errors)'''
         data = {}
-        if request.data.get('receiver'):
-            receiver = UserData.objects.get(username=request.data.get('receiver'))
 
-            req = Friends(sender=request.user, receiver=receiver, friend_status='pending') 
-            req.save()
-            serializer = FriendsSerializer(req)
-            data = serializer.data
-            return Response(data=data, status=status.HTTP_200_OK)
-        else:
+        # Validate receiver
+        receiver = UserData.objects.filter(username=request.data.get('receiver')).first()
+        if not receiver:
             return Response(create_response(status.HTTP_404_NOT_FOUND,"receiver not found."), status=status.HTTP_404_NOT_FOUND)
+
+        # Validate if already requested to this receiver
+        AlreadyRequested = Friends.objects.filter(sender=request.user, receiver=receiver, friend_status='pending').exists()
+        if AlreadyRequested:
+            return Response(create_response(status.HTTP_409_CONFLICT,f"You already have pending request with {receiver.username}"), status=status.HTTP_409_CONFLICT)
+
+        # Make friend request
+        req = Friends(sender=request.user, receiver=receiver, friend_status='pending') 
+        req.save()
+
+        # Return friend request data
+        serializer = FriendsSerializer(req)
+        data = serializer.data
+        return Response(data=data, status=status.HTTP_200_OK)
 
 
 class GuestFriendView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
+    
     """
     Friend Request Retrive: Retrieve the friend list of a user with a pending friend status. And also retrive gift list for user.
     And also retrive the user list who request for gift.
     """
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
-        # print("-------", request.user)
         data = {}
         friend_requests = []
         if Friends.objects.filter(receiver=request.user, friend_status='pending').exists():
@@ -230,21 +257,28 @@ class GuestFriendView(APIView):
     """
     Accepting or Rejecting friend requests or gifts for authenticated users.
     """
+    @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
-        # print("-------", request.user)
+        # accept/reject request
         if request.data.get('status'):
             if request.data.get('user'):
-                if Friends.objects.filter(sender__username = request.data.get('user')).exists():
-                    user = Friends.objects.get(sender__username=request.data.get('user'), receiver=request.user)
+                choice_list = [i for i,j in FRIEND_CHOISE]
+                if request.data.get('status') not in choice_list:
+                    return Response(create_response(status.HTTP_404_NOT_FOUND,"Invalid Status."), status=status.HTTP_404_NOT_FOUND)
+
+                user = Friends.objects.filter(sender__username=request.data.get('user'), receiver=request.user).first()
+                if user:
                     user.friend_status = request.data.get('status')
                     user.save()
                     serializer = FriendsSerializer(user)
                     data = serializer.data
                     return Response(data=data, status=status.HTTP_200_OK)
                 else:
-                    return Response(create_response(status.HTTP_404_NOT_FOUND,f"User not found with {request.data.get('user')}."), status=status.HTTP_404_NOT_FOUND)
+                    return Response(create_response(status.HTTP_404_NOT_FOUND,f"Friend request with {request.data.get('user')} not found."), status=status.HTTP_404_NOT_FOUND)
             else:
                 return Response(create_response(status.HTTP_404_NOT_FOUND,"There is no user available. Please provide one."), status=status.HTTP_404_NOT_FOUND)
+        
+        # Sent gift list for user
         elif request.data.get('coin'):
             if request.data.get('coin-sender'):
                 gift = GiftSent.objects.get(coin_sender__username=request.data.get('coin-sender'), coin_receiver=request.user)
@@ -258,8 +292,14 @@ class GuestFriendView(APIView):
                 return Response(data=data, status=status.HTTP_200_OK)
             else:
                 return Response(create_response(status.HTTP_404_NOT_FOUND,"Coin-Sender not found."), status=status.HTTP_404_NOT_FOUND)
+        
+        # Send request for gift
         elif request.data.get('request-sender'):
-            req_gift = RequestGift.objects.get(request_sender__username=request.data.get('request-sender'), request_receiver=request.user)
+            req_gift = RequestGift.objects.filter(request_sender__username=request.data.get('request-sender'), request_receiver=request.user).first()
+            
+            if not req_gift:
+                return Response(create_response(status.HTTP_404_NOT_FOUND,f"Request gift data from {request.data.get('request-sender')} not found."), status=status.HTTP_404_NOT_FOUND)
+
             req_gift.flag = True
             req_gift.save()
             sender_obj = UserData.objects.get(username=request.data.get('request-sender'))
