@@ -1,8 +1,14 @@
 import requests
 import geoip2.database
+
+# models
 from core.models import UserData, Match, MatchUser
 from channels.db import database_sync_to_async
 from django.db.models import F
+
+# rest_framework
+from rest_framework.response import Response
+from rest_framework import status
 
 
 def get_public_ip_address():
@@ -74,3 +80,17 @@ def update_match_user_status(match, user_id):
     if not MatchUser.objects.filter(match=match, status=1).exists():
         Match.objects.filter(id=match.id).update(status=0)
     return True
+
+
+def handle_exceptions(view_func):
+    def wrapped_view(*args, **kwargs):
+        try:
+            return view_func(*args, **kwargs)
+        except Exception as e:
+            response = {
+                "status": "error",
+                "message": "Something went wrong..!"
+            }
+            return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    return wrapped_view

@@ -1,34 +1,60 @@
-from core.utils import country, create_response
-from core.custom_authentication import CsrfExemptSessionAuthentication,CustomFacebookOAuth2Adapter
-from rest_framework.authentication import BasicAuthentication 
-from rest_framework.views import APIView
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny
-from social_django.utils import psa
-from core.models import UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift
-from rest_framework.response import Response
-from rest_framework import status
-from core.serializers import UserSerializer, GemsCoinsSerializer, FriendsSerializer, GiftSentSerializer, RequestGiftSerializer
-from allauth.socialaccount.models import SocialAccount
-from rest_framework import serializers
 from django.contrib.auth import login, logout
-from rest_framework import generics
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.db.models import Q
+
+# From app
+from core.utils import country, create_response, handle_exceptions
+from core.custom_authentication import CsrfExemptSessionAuthentication,CustomFacebookOAuth2Adapter
+from core.serializers import UserSerializer, GemsCoinsSerializer, FriendsSerializer, GiftSentSerializer, RequestGiftSerializer
+
+# From rest_framework 
+from rest_framework.authentication import BasicAuthentication 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework import serializers
+from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+
+# From all auth
+from allauth.socialaccount.models import SocialAccount
+
+# Models
+from core.models import UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift, FRIEND_CHOISE
 
 
 class GuestLoginView(APIView):
+
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         guest_number = UserCount.objects.get(id=1)
         count = guest_number.guest
         country_name = country()
 
-        user = UserData(login_role='guest', username = f'Guest_{count:09d}', user_id = f'Guest_{count:09d}', country = country_name)
+        # Validation to check unique username and userid
+        while True:
+            already_exist = UserData.objects.filter(Q(username=f'Guest_{count:09d}') | Q(user_id=f'Guest_{count:09d}')).exists()
+            if already_exist:
+                count += 1
+            else:
+                break
+        
+        # Create user object
+        user = UserData(
+            login_role = 'guest',
+            username = f'Guest_{count:09d}',
+            user_id = f'Guest_{count:09d}',
+            country = country_name
+        )
         user.save()
+
+        # Assign coins and gems to user
         gemcoin = GemsCoins(user=user, coins=5000, gems=20)
         gemcoin.save()
-        guest_number.guest = count + 1
+
+        # Increment user count
+        guest_number.guest = guest_number.guest + 1
         guest_number.save()
         
         user_dict = {
@@ -37,8 +63,9 @@ class GuestLoginView(APIView):
             'user_id': user.user_id,
             'country': user.country
         }
+
         login(request, user)
-        return Response(user_dict,status=status.HTTP_200_OK)
+        return Response(user_dict, status=status.HTTP_200_OK)
 
 
 # @method_decorator(csrf_exempt, name='dispatch')
