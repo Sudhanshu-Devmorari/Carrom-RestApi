@@ -313,11 +313,13 @@ class GuestFriendView(APIView):
 
 class GiftSentView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
+
     """
     Retrieve the friend list of a user whose friend status is Accept.
     """
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
-        # print('-----', request.user)
         all_users = []
         if Friends.objects.filter(sender=request.user, friend_status='accept').exists():
             users = Friends.objects.filter(sender=request.user, friend_status='accept')
@@ -343,12 +345,13 @@ class GiftSentView(APIView):
     """
     Send the coins to your friends as gifts.
     """
+    @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
         # print('----', request.user)
         if request.data.get('coin'):
             if request.data.get('coin_receiver'):
-                if UserData.objects.filter(username=request.data.get('coin_receiver')).exists():
-                    user = UserData.objects.get(username=request.data.get('coin_receiver'))
+                user = UserData.objects.filter(username=request.data.get('coin_receiver')).first()
+                if user:
                     gift = GiftSent(coin=request.data.get('coin'), coin_sender=request.user, coin_receiver=user)
                     gift.save()
                     serializer = GiftSentSerializer(gift)
@@ -364,6 +367,9 @@ class GiftSentView(APIView):
 
 class RequestGiftView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
+
+    @handle_exceptions
     def post(self, request, formate=None, *args, **kwargs):
         print("------------", request.user)
         if request.data.get('request-receiver'):
@@ -383,6 +389,7 @@ class LeaguesLeaderboardView(APIView):
     """
     For the Leagues Leaderboard, created the API that retrieves the users as per star level.
     """
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"-------",request.user.star_level)
             star_level = request.user.star_level
@@ -427,6 +434,7 @@ class FriendsLeaderboardView(APIView):
     """
     API use for retrieve the user's friends list for the Friends Leaderboard.
     """
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         all_users = []
         if Friends.objects.filter(sender=request.user, friend_status='accept').exists():
@@ -487,6 +495,7 @@ class CountryLeaderboardView(APIView):
     """
     API use for retrieve the user's list country wise for the Country Leaderboard.
     """
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"***", request.user.country)
         data = []
@@ -514,6 +523,7 @@ class WorldLeaderboardView(APIView):
     """
     API use for retrieve users lists for the World Leaderboard.
     """
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"***")
         data = []
@@ -538,6 +548,8 @@ class WorldLeaderboardView(APIView):
 
 
 class FaceBookFriendListView(APIView):
+    
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"***")
         friends = []
@@ -553,9 +565,11 @@ class FaceBookFriendListView(APIView):
 
 class RemoveFriends(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
     """
     Retrive the Friends List.
     """
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"-------")
         all_users = []
@@ -579,10 +593,11 @@ class RemoveFriends(APIView):
     """
     Remove friend from Friends List.
     """
+    @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"***")
-        if request.data.get("username"):
-            user_obj = UserData.objects.get(username=request.data.get("username"))
+        user_obj = UserData.objects.filter(username=request.data.get("username")).first()
+        if user_obj:
             if Friends.objects.filter(sender=user_obj, receiver=request.user, friend_status='accept').exists():
                 instance = Friends.objects.filter(sender=user_obj, receiver=request.user, friend_status='accept')
                 instance.delete()
@@ -591,14 +606,16 @@ class RemoveFriends(APIView):
                 instances.delete()
             return Response(create_response(status.HTTP_200_OK, f"{request.data.get('username')} sucessfully removed from your friends list."), status=status.HTTP_200_OK)
         else:
-            return Response(create_response(status.HTTP_404_NOT_FOUND,"There is no username available. Please provide one."), status=status.HTTP_404_NOT_FOUND)
+            return Response(create_response(status.HTTP_404_NOT_FOUND,f"{request.data.get('username')} user not found."), status=status.HTTP_404_NOT_FOUND)
 
 
 class LeaderboardWiningView(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
     """
     Create or Get the user and add the winning coins in weekly coins field.
     """
+    @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
         if request.data.get('winner'):
             if request.data.get('coins'):
@@ -625,6 +642,8 @@ class LeaderboardWiningView(APIView):
 
 
 class GuestLogout(APIView):
+    
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"***")
         logout(request)
@@ -633,6 +652,8 @@ class GuestLogout(APIView):
 
 # For update the user star level:
 class UpdateStarLevelView(APIView):
+    
+    @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"***")
         user_obj = UserData.objects.get(username=request.user.username)
