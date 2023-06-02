@@ -1,5 +1,6 @@
 from django.contrib import admin
-from core.models import UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift, Match, MatchUser
+from core.models import (UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift, Match, MatchUser,
+                         Striker, UserStriker, AdPurchase)
 
 # Register your models here.
 
@@ -38,3 +39,15 @@ class MatchdAdmin(admin.ModelAdmin):
 @admin.register(MatchUser)
 class MatchUserdAdmin(admin.ModelAdmin):
     list_display = ('match','user','status')
+
+@admin.register(Striker)
+class StrikerAdmin(admin.ModelAdmin):
+    list_display = ('id','status','index','created')
+
+@admin.register(UserStriker)
+class UserStrikerAdmin(admin.ModelAdmin):
+    list_display = ('user','striker','status','created')
+
+@admin.register(AdPurchase)
+class AdPurchaseAdmin(admin.ModelAdmin):
+    list_display = ('user','is_purchase')

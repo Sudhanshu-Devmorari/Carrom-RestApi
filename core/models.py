@@ -87,3 +87,25 @@ class MatchUser(models.Model):
     user = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name='match_user')
     status = models.IntegerField(default=1) # 1: active,0: deactivate
     created = models.DateTimeField(auto_now_add=True)
+
+
+class Striker(models.Model):
+    index = models.IntegerField(default=0)
+    status = models.IntegerField(default=1) # 1: active,0: deactivate
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+
+class UserStriker(models.Model):
+    user = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name='user_striker')
+    striker = models.ForeignKey(Striker, on_delete=models.CASCADE)
+    status = models.IntegerField(default=0) # 1: active,0: deactivate
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+
+class AdPurchase(models.Model):
+    user = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name='ad_purchase_user')
+    is_purchase = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)

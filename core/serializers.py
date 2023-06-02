@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from core.models import UserData, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift
+from core.models import UserData, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift, UserStriker, Striker, AdPurchase
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -50,3 +50,30 @@ class RequestGiftSerializer(serializers.ModelSerializer):
     class Meta:
         model = RequestGift
         fields = '__all__'
+
+class StrikerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Striker
+        fields = ('index',)
+
+class UserStrikerSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    striker = StrikerSerializer()
+
+    class Meta:
+        model = UserStriker
+        fields = ('user', 'striker')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Update striker table index key as striker_key
+        representation['striker']['striker_index'] = representation['striker'].pop('index')
+        merged_data = {**representation['user'], **representation['striker']}
+        return merged_data
+    
+class AdPurchaseSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    
+    class Meta:
+        model = AdPurchase
+        fields = ('user','is_purchase')

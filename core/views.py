@@ -6,7 +6,8 @@ from django.db.models import Q
 # From app
 from core.utils import country, create_response, handle_exceptions
 from core.custom_authentication import CsrfExemptSessionAuthentication,CustomFacebookOAuth2Adapter
-from core.serializers import UserSerializer, GemsCoinsSerializer, FriendsSerializer, GiftSentSerializer, RequestGiftSerializer
+from core.serializers import (UserSerializer, GemsCoinsSerializer, FriendsSerializer, GiftSentSerializer, RequestGiftSerializer,
+                              UserStrikerSerializer, AdPurchaseSerializer)
 
 # From rest_framework 
 from rest_framework.authentication import BasicAuthentication 
@@ -21,8 +22,10 @@ from rest_framework.permissions import IsAuthenticated
 from allauth.socialaccount.models import SocialAccount
 
 # Models
-from core.models import UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift, FRIEND_CHOISE
+from core.models import (UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift,
+                         FRIEND_CHOISE, Striker, UserStriker, AdPurchase)
 
+DEFAULT_STRIKER = 0
 
 class GuestLoginView(APIView):
 
@@ -52,6 +55,14 @@ class GuestLoginView(APIView):
         # Assign coins and gems to user
         gemcoin = GemsCoins(user=user, coins=5000, gems=20)
         gemcoin.save()
+
+        # Validate if striker entry exists if not than make new one
+        striker_obj = Striker.objects.filter(index=DEFAULT_STRIKER, status=1).first()
+        if not striker_obj:
+            striker_obj, created = Striker.objects.update_or_create(index=DEFAULT_STRIKER, defaults={'status':1})
+        
+        # Assign default striker to user
+        UserStriker.objects.create(user=user ,striker=striker_obj, status=1)
 
         # Increment user count
         guest_number.guest = guest_number.guest + 1
@@ -666,3 +677,90 @@ class CheckView(APIView):
     def get(self, request):
         # print("-------",request.user)
         return Response(request.user.username,status=status.HTTP_200_OK)
+
+
+class StrikerView(APIView):
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
+
+    """
+    Retrieve striker data of user.
+    """
+    @handle_exceptions
+    def get(self, request, format=None, *args, **kwargs):
+        data = {}
+        
+        # validate user
+        user = UserData.objects.filter(user_id=request.query_params.get('user_id')).first() 
+        if not user:
+            return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
+        
+        # striker data
+        striker_obj = UserStriker.objects.filter(user=user, status=1).first()
+        serializer = UserStrikerSerializer(striker_obj)
+        data = serializer.data
+        return Response(data=data, status=status.HTTP_200_OK)
+
+    """
+    Make entry for striker selected by user.
+    """
+    @handle_exceptions
+    def post(self, request, format=None, *args, **kwargs):
+        # get data
+        user_id = request.data.get('user_id') 
+        striker_index = request.data.get('striker_index').split(',') if request.data.get('striker_index') else []
+
+        # validate data
+        user = UserData.objects.filter(user_id=user_id).first() 
+        striker_index = Striker.objects.filter(index__in=striker_index, status=1).values_list('index', flat=True)
+        if not all([user, striker_index]):
+            return Response(create_response(status.HTTP_404_NOT_FOUND,"Data not found."), status=status.HTTP_404_NOT_FOUND)
+        
+        # Make striker entry for user
+        striker_ids = Striker.objects.filter(index__in=striker_index, status=1).values_list('id', flat=True)
+        for striker_id in striker_ids:
+            user_striker_obj, created = UserStriker.objects.get_or_create(user=user, striker_id=striker_id)
+
+        # Return response
+        return Response(create_response(status.HTTP_200_OK,"Striker added successfully."),status=status.HTTP_200_OK)
+
+        
+class AdPurchaseView(APIView):
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    permission_classes = [IsAuthenticated]
+
+    """
+    Get ad purchase data of user.
+    """
+    @handle_exceptions
+    def get(self, request, format=None, *args, **kwargs):
+        data = {}
+        
+        # Validate user
+        user = UserData.objects.filter(user_id=request.query_params.get('user_id')).first() 
+        if not user:
+            return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
+        
+        # Does user puchase any ad
+        ad_purchase_obj = AdPurchase.objects.filter(user=user).first()
+        if not ad_purchase_obj:
+            return Response(create_response(status.HTTP_404_NOT_FOUND,f"{user.user_id} does not have ad purchase data."), status=status.HTTP_404_NOT_FOUND)
+
+        # Return user's ad purchase data
+        serializer = AdPurchaseSerializer(ad_purchase_obj)
+        data = serializer.data
+        return Response(data=data, status=status.HTTP_200_OK)
+        
+    
+    @handle_exceptions
+    def post(self, request, format=None, *args, **kwargs):
+        # validate user
+        user = UserData.objects.filter(user_id=request.data.get('user_id')).first() 
+        if not user:
+            return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
+        
+        # Make entry in ad purchase for user
+        AdPurchase.objects.get_or_create(user=user, is_purchase=True)
+
+        # Return response
+        return Response(create_response(status.HTTP_200_OK,"Ad purchase successfully."),status=status.HTTP_200_OK)
