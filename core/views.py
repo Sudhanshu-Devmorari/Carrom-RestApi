@@ -25,6 +25,10 @@ from allauth.socialaccount.models import SocialAccount
 from core.models import (UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift,
                          FRIEND_CHOISE, Striker, UserStriker, AdPurchase)
 
+from social_django.utils import load_strategy
+from social_core.backends.facebook import FacebookOAuth2
+from django.http import JsonResponse
+
 DEFAULT_STRIKER = 0
 
 class GuestLoginView(APIView):
@@ -675,8 +679,20 @@ class UpdateStarLevelView(APIView):
 
 class CheckView(APIView):
     def get(self, request):
+        access_token = 'GGQVliSG12UHdEd1h4c0xaMTFyMkVUeXpjQVZAxZATBlaVpiRTRLTDN4OVhFYmRfZA0dSQ3ZAwOUQ4czBxUnVxc29ncDF1WWY0dTR1cHZAodUJDM3h5dFFIR21jb3BObDhtdnU4MGI2cHFVQzNmU09QdVhQZAXV6VTBiOWxrRVhHeV9oOU5sZAwZDZD'
+        strategy = load_strategy(request)
+        backend = FacebookOAuth2(strategy)
+
+        try:
+            user = backend.do_auth(access_token)
+            print("************ ", user)
+            return JsonResponse({'message': 'Token verified successfully'})
+        except Exception as e:
+            # Token verification failed
+            return JsonResponse({'error': str(e)}, status=400)
+
         # print("-------",request.user)
-        return Response(request.user.username,status=status.HTTP_200_OK)
+        # return Response(request.user.username,status=status.HTTP_200_OK)
 
 
 class StrikerView(APIView):

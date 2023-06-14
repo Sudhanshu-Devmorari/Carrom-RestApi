@@ -119,6 +119,7 @@ DATABASES = {
     }
 }
 
+SOCIALACCOUNT_LOGIN_ON_GET=True
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -187,10 +188,14 @@ CRONJOBS = [
 # }
 
 AUTHENTICATION_BACKENDS = [
+    'social_core.backends.facebook.FacebookOAuth2',
     'django.contrib.auth.backends.ModelBackend',
     # 'social_core.backends.google.GoogleOAuth2',
     # 'core.custom-backends.GoogleBackend',
 ]
+
+SOCIAL_AUTH_FACEBOOK_KEY = '323683366333519'
+SOCIAL_AUTH_FACEBOOK_SECRET = 'd24c0f055c51dabb272815de020f48bb'
 
 # SOCIAL_AUTH_PIPELINE = (
 #     'social_core.pipeline.social_auth.social_details',
