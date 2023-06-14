@@ -194,8 +194,8 @@ AUTHENTICATION_BACKENDS = [
     # 'core.custom-backends.GoogleBackend',
 ]
 
-SOCIAL_AUTH_FACEBOOK_KEY = '323683366333519'
-SOCIAL_AUTH_FACEBOOK_SECRET = 'd24c0f055c51dabb272815de020f48bb'
+SOCIAL_AUTH_FACEBOOK_KEY = os.environ.get('SOCIAL_AUTH_FACEBOOK_KEY')
+SOCIAL_AUTH_FACEBOOK_SECRET = os.environ.get('SOCIAL_AUTH_FACEBOOK_SECRET')
 
 # SOCIAL_AUTH_PIPELINE = (
 #     'social_core.pipeline.social_auth.social_details',
