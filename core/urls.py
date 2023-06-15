@@ -21,14 +21,27 @@ urlpatterns = [
     path('request-gift/', views.RequestGiftView.as_view(), name='request-gift'),
     path('striker/', views.StrikerView.as_view(), name='striker-view'),
     path('ad-purchase/', views.AdPurchaseView.as_view(), name='ad-purchase'),
+    path('facebook-login/', views.FacebookLoginView.as_view(), name='facebook-login'),
 ]
 
 """
-FB-LogIn: https://127.0.0.1:8000/accounts/facebook/login/
 Google-LogIn: https://127.0.0.1:8000/accounts/google/login/
 
 LogOut: https://127.0.0.1:8000/accounts/logout/
 
 # WebSocket URL:
-new WebSocket("wss://127.0.0.1:8000/?secure_code=QWER1234");
+==>> Playwithfirend
+1) connect to socket(First player)
+new WebSocket("wss://127.0.0.1:8000/");
+it will return secure_code, pass that secure_code to join channel
+
+2) To connect second player
+new WebSocket("wss://127.0.0.1:8000/?secure_code=secure_code");
+
+==>> Online play
+1) connect to socket(First player)
+new WebSocket("wss://127.0.0.1:8000/online-match/?city=0");
+
+2) To connect second player
+new WebSocket("wss://127.0.0.1:8000/online-match/?city=0");
 """

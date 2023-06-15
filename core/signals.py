@@ -44,16 +44,15 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 
                 google_number.google = count + 1
                 google_number.save()
-            else:
+            elif social_user_obj.provider == 'facebook':
                 f_name = social_user_obj.extra_data['first_name']
                 fb_number = UserCount.objects.get(id=1)
                 count = fb_number.facebook
 
-                # user.login_role = 'facebook'
                 user_obj.login_role = social_user_obj.provider
                 user_obj.country = country()
                 user_obj.user_id = f'{f_name[:10]}_{count:05d}'
-                user_obj.profile_url = social_user_obj.extra_data['picture']['data']['url']
+                # user_obj.profile_url = social_user_obj.extra_data['picture']['data']['url']
                 user_obj.save()
 
                 # Assign coins and gems to user

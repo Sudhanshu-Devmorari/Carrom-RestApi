@@ -77,3 +77,29 @@ class AdPurchaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdPurchase
         fields = ('user','is_purchase')
+
+class UserAccountDataSerializer(serializers.Serializer):
+    user = UserSerializer()
+    gmescoin = GemsCoinsSerializer()
+    adpurchase = AdPurchaseSerializer()
+    striker = UserStrikerSerializer()
+
+    def to_representation(self, instance):
+        user_obj = UserData.objects.get(id=instance.id)
+        gems_obj = GemsCoins.objects.filter(user_id=instance.id).first()
+        ad_purchase_obj = AdPurchase.objects.filter(user_id=instance.id).first()
+        user_striker_obj = UserStriker.objects.filter(user_id=instance.id, status=1).first()
+        user_purchsed_striker_ids = list(UserStriker.objects.filter(user_id=instance.id).values_list('striker__index', flat=True))
+        
+        user_model_data = UserSerializer(user_obj).data
+        gems_model_data = GemsCoinsSerializer(gems_obj).data if gems_obj else {}
+        ad_purchase_model_data = AdPurchaseSerializer(ad_purchase_obj).data if ad_purchase_obj else {'is_purchase': False}
+        user_striker_model_data = UserStrikerSerializer(user_striker_obj).data if user_striker_obj else {}
+        user_purchsed_striker = {'purchased_striker': user_purchsed_striker_ids}
+
+        gems_model_data.pop('user', None)
+        ad_purchase_model_data.pop('user', None)
+        user_striker_model_data = {'striker_index': user_striker_model_data.get('striker_index', None)}
+
+        merged_data = {**user_model_data, **gems_model_data, **ad_purchase_model_data, **user_striker_model_data, **user_purchsed_striker}
+        return merged_data

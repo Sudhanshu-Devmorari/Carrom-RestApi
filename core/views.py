@@ -4,18 +4,16 @@ from django.utils.decorators import method_decorator
 from django.db.models import Q
 
 # From app
-from core.utils import country, create_response, handle_exceptions
+from core.utils import country, create_response, handle_exceptions, validate_facebook_token
 from core.custom_authentication import CsrfExemptSessionAuthentication,CustomFacebookOAuth2Adapter
 from core.serializers import (UserSerializer, GemsCoinsSerializer, FriendsSerializer, GiftSentSerializer, RequestGiftSerializer,
-                              UserStrikerSerializer, AdPurchaseSerializer)
+                              UserStrikerSerializer, AdPurchaseSerializer, UserAccountDataSerializer)
 
 # From rest_framework 
 from rest_framework.authentication import BasicAuthentication 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import serializers
-from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
 # From all auth
@@ -25,9 +23,6 @@ from allauth.socialaccount.models import SocialAccount
 from core.models import (UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift,
                          FRIEND_CHOISE, Striker, UserStriker, AdPurchase)
 
-from social_django.utils import load_strategy
-from social_core.backends.facebook import FacebookOAuth2
-from django.http import JsonResponse
 
 DEFAULT_STRIKER = 0
 
@@ -72,12 +67,8 @@ class GuestLoginView(APIView):
         guest_number.guest = guest_number.guest + 1
         guest_number.save()
         
-        user_dict = {
-            'login_role': user.login_role,
-            'username': user.username,
-            'user_id': user.user_id,
-            'country': user.country
-        }
+        serializer = UserAccountDataSerializer(user)
+        user_dict = serializer.data
 
         login(request, user)
         return Response(user_dict, status=status.HTTP_200_OK)
@@ -100,7 +91,7 @@ class ProfileView(APIView):
         if not user:
             return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
         
-        serializer = UserSerializer(user)
+        serializer = UserAccountDataSerializer(user)
         data = serializer.data
         return Response(data=data, status=status.HTTP_200_OK)
 
@@ -679,20 +670,8 @@ class UpdateStarLevelView(APIView):
 
 class CheckView(APIView):
     def get(self, request):
-        access_token = 'GGQVliSG12UHdEd1h4c0xaMTFyMkVUeXpjQVZAxZATBlaVpiRTRLTDN4OVhFYmRfZA0dSQ3ZAwOUQ4czBxUnVxc29ncDF1WWY0dTR1cHZAodUJDM3h5dFFIR21jb3BObDhtdnU4MGI2cHFVQzNmU09QdVhQZAXV6VTBiOWxrRVhHeV9oOU5sZAwZDZD'
-        strategy = load_strategy(request)
-        backend = FacebookOAuth2(strategy)
-
-        try:
-            user = backend.do_auth(access_token)
-            print("************ ", user)
-            return JsonResponse({'message': 'Token verified successfully'})
-        except Exception as e:
-            # Token verification failed
-            return JsonResponse({'error': str(e)}, status=400)
-
         # print("-------",request.user)
-        # return Response(request.user.username,status=status.HTTP_200_OK)
+        return Response(request.user.username,status=status.HTTP_200_OK)
 
 
 class StrikerView(APIView):
@@ -780,3 +759,25 @@ class AdPurchaseView(APIView):
 
         # Return response
         return Response(create_response(status.HTTP_200_OK,"Ad purchase successfully."),status=status.HTTP_200_OK)
+    
+
+class FacebookLoginView(APIView):
+
+    def get(self, request, format=None, *args, **kwargs):
+        access_token = request.GET.get('access_token', None)
+
+        if not access_token:
+            return Response(create_response(status.HTTP_404_NOT_FOUND, "Access token not found."), status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            response = validate_facebook_token(access_token)
+            if response['is_token_verified']:
+                serializer = UserAccountDataSerializer(response['user_obj'])
+                data = serializer.data
+                
+                login(request, response['user_obj'])
+                return Response(data=data, status=status.HTTP_200_OK)
+            else:
+                return Response(create_response(status.HTTP_404_NOT_FOUND, "Access token not verified."), status=status.HTTP_404_NOT_FOUND)
+        except:
+            return Response(create_response(status.HTTP_400_BAD_REQUEST, "Token verification failed"), status=status.HTTP_400_BAD_REQUEST)
