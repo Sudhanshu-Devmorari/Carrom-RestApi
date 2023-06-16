@@ -14,6 +14,7 @@ from rest_framework import status
 # From all auth
 from allauth.socialaccount.models import SocialAccount
 from social_core.exceptions import AuthTokenError
+
 # Global variables
 PlayWithFriendEntryFee = 5000
 PlayWithFriendWinningPrize = 10000
@@ -68,10 +69,22 @@ def validate_facebook_token(access_token):
         data = response.json()
         social_account_obj = SocialAccount.objects.filter(provider='facebook', uid=data.get('id')).first()
         if not social_account_obj:
+            count = 0
+            username = data.get('name', 'Facebook')
+
+            # Validation to check unique username 
+            while True:
+                user_name = f'{username}_{count:09d}' if count else username
+                already_exist = UserData.objects.filter(username=user_name).exists()
+                if already_exist:
+                    count += 1
+                else:
+                    break
+
             # Userdata entry
             user_obj = UserData.objects.create(
                 profile_url = data['picture']['data']['url'] if data['picture']['data']['url'] else "",
-                username = data['name'],
+                username = user_name,
                 email = data.get('email', ""),
                 first_name = data['name'],
             )
@@ -193,7 +206,6 @@ def assign_winning_prize(user_ids, prize_coin):
 @database_sync_to_async
 def update_score_based_on_penlty(match_user_id, foul_penlty_w, foul_penlty_b, cookie_data_list):
     match_user_obj = MatchUser.objects.filter(id=match_user_id).only('score').first()
-    # skip_player_turn = False
 
     if match_user_obj.score >= foul_penlty_w:
         match_user_obj.score -= foul_penlty_w
@@ -204,17 +216,14 @@ def update_score_based_on_penlty(match_user_id, foul_penlty_w, foul_penlty_b, co
         cookie_data_list.append({'c':'B', 'x':0 , 'y':0, 'z':0})
 
     else:
-        # skip_player_turn = True
         match_user_obj.skip_turn = True
 
     match_user_obj.save(update_fields=['score','skip_turn'])
-    # return cookie_data_list, skip_player_turn
     return cookie_data_list
 
 
 @database_sync_to_async
 def get_game_over_status(match_id):
-    # try:
     players_data = MatchUser.objects.filter(match_id=match_id).values('id','match__match_type','user_id', 'user__user_id','user__username' , 'city__prize', 'score')
     user_ids = list(map(lambda d: d['user_id'], players_data))
 
@@ -233,8 +242,6 @@ def get_game_over_status(match_id):
         winning_prize = PlayWithFriendWinningPrize
 
     return {'status': status, 'winner': winner, 'user_ids':user_ids, 'winning_prize': winning_prize}
-    # except:
-    #     return False
 
 
 @database_sync_to_async

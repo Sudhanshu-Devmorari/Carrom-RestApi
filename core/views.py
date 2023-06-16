@@ -172,14 +172,15 @@ class GuestFriendSearchView(APIView):
     permission_classes = [IsAuthenticated]
 
     """
-    Search the guest user with user-id if user exist
+    Search the guest user with user-name if user exist
     """
     @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         data = {}
 
-        # Validate user_id
-        user = UserData.objects.filter(user_id=request.query_params.get('user_id')).first()
+        # Validate username
+        username = request.query_params.get('username').strip() if request.query_params.get('username') else None
+        user = UserData.objects.filter(username=username).first()
         if not user:
             return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
         
@@ -203,7 +204,8 @@ class GuestFriendSearchView(APIView):
         data = {}
 
         # Validate receiver
-        receiver = UserData.objects.filter(username=request.data.get('receiver')).first()
+        receiver_username = request.data.get('receiver').strip() if request.data.get('receiver') else None
+        receiver = UserData.objects.filter(username=receiver_username).first()
         if not receiver:
             return Response(create_response(status.HTTP_404_NOT_FOUND,"receiver not found."), status=status.HTTP_404_NOT_FOUND)
 
@@ -268,31 +270,53 @@ class GuestFriendView(APIView):
         # accept/reject request
         if request.data.get('status'):
             if request.data.get('user'):
+                request_status = request.data.get('status').strip() if request.data.get('status') else None
+                request_sender = request.data.get('user').strip() if request.data.get('user') else None
+
                 choice_list = [i for i,j in FRIEND_CHOISE]
-                if request.data.get('status') not in choice_list:
+                if request_status not in choice_list:
                     return Response(create_response(status.HTTP_404_NOT_FOUND,"Invalid Status."), status=status.HTTP_404_NOT_FOUND)
 
-                user = Friends.objects.filter(sender__username=request.data.get('user'), receiver=request.user).first()
+                user = Friends.objects.filter(sender__username=request_sender, receiver=request.user).first()
                 if user:
-                    user.friend_status = request.data.get('status')
+                    user.friend_status = request_status
                     user.save()
                     serializer = FriendsSerializer(user)
                     data = serializer.data
                     return Response(data=data, status=status.HTTP_200_OK)
                 else:
-                    return Response(create_response(status.HTTP_404_NOT_FOUND,f"Friend request with {request.data.get('user')} not found."), status=status.HTTP_404_NOT_FOUND)
+                    return Response(create_response(status.HTTP_404_NOT_FOUND,f"Friend request with {request_sender} not found."), status=status.HTTP_404_NOT_FOUND)
             else:
                 return Response(create_response(status.HTTP_404_NOT_FOUND,"There is no user available. Please provide one."), status=status.HTTP_404_NOT_FOUND)
         
         # Sent gift list for user
         elif request.data.get('coin'):
-            if request.data.get('coin-sender'):
-                gift = GiftSent.objects.get(coin_sender__username=request.data.get('coin-sender'), coin_receiver=request.user)
+            coin_sender = request.data.get('coin-sender').strip() if request.data.get('coin-sender') else None
+            sender_coin = int(request.data.get('coin'))
+            
+            if coin_sender:
+                gift = GiftSent.objects.filter(coin_sender__username=coin_sender, coin_receiver=request.user).first()
+                if not gift:
+                    return Response(create_response(status.HTTP_404_NOT_FOUND,f"{coin_sender} cannot send any coin."), status=status.HTTP_404_NOT_FOUND)
+
+                # Is login user has enough coin to send
+                user_has_coin = GemsCoins.objects.filter(user_id=gift.coin_sender.id, coins__gte=sender_coin).exists()
+                if not user_has_coin:
+                    return Response(create_response(status.HTTP_404_NOT_FOUND,f"{gift.coin_sender.username} cannot have enough coin to gift"), status=status.HTTP_404_NOT_FOUND)
+                
                 gift.flag = True
                 gift.save()
+
+                # Update receiver coins
                 user = GemsCoins.objects.get(user=request.user)
-                user.coins = user.coins + int(request.data.get('coin'))
+                user.coins = user.coins + sender_coin
                 user.save()
+
+                # Deduct coin from sender user
+                coin_sender_obj = GemsCoins.objects.get(user_id=gift.coin_sender.id)
+                coin_sender_obj.coins = coin_sender_obj.coins - sender_coin
+                coin_sender_obj.save()
+
                 serializer = GemsCoinsSerializer(user)
                 data = serializer.data
                 return Response(data=data, status=status.HTTP_200_OK)
@@ -301,15 +325,21 @@ class GuestFriendView(APIView):
         
         # Send request for gift
         elif request.data.get('request-sender'):
-            req_gift = RequestGift.objects.filter(request_sender__username=request.data.get('request-sender'), request_receiver=request.user).first()
+            gift_request_sender = request.data.get('request-sender').strip() if request.data.get('request-sender') else None
+            gift_coin = 150
             
+            # Update status that receiver accepted request_gift request
+            req_gift = RequestGift.objects.filter(request_sender__username=gift_request_sender, request_receiver=request.user).first()
             if not req_gift:
-                return Response(create_response(status.HTTP_404_NOT_FOUND,f"Request gift data from {request.data.get('request-sender')} not found."), status=status.HTTP_404_NOT_FOUND)
+                return Response(create_response(status.HTTP_404_NOT_FOUND,f"Request gift data from {gift_request_sender} not found."), status=status.HTTP_404_NOT_FOUND)
 
             req_gift.flag = True
             req_gift.save()
-            sender_obj = UserData.objects.get(username=request.data.get('request-sender'))
-            giftsent_obj = GiftSent.objects.create(coin_sender=request.user, coin_receiver=sender_obj, coin=150)
+
+            # Send gift to receiver by login user
+            sender_obj = UserData.objects.get(username=gift_request_sender)
+            giftsent_obj = GiftSent.objects.create(coin_sender=request.user, coin_receiver=sender_obj, coin=gift_coin)
+            
             serializer = GiftSentSerializer(giftsent_obj)
             data = serializer.data
             return Response(data=data, status=status.HTTP_200_OK)
@@ -340,10 +370,11 @@ class GiftSentView(APIView):
         """
         if request.user.login_role == 'facebook' and SocialAccount.objects.filter(user=request.user).exists():
             user = SocialAccount.objects.get(user=request.user)
-            for i in range(len(user.extra_data['friends']['data'])):
-                friend_id = user.extra_data['friends']['data'][i]['id']
-                ur = SocialAccount.objects.filter(uid=friend_id).first()
-                if ur: all_users.append(ur.user.username) 
+            if 'friends' in user.extra_data:
+                for i in range(len(user.extra_data['friends']['data'])):
+                    friend_id = user.extra_data['friends']['data'][i]['id']
+                    ur = SocialAccount.objects.filter(uid=friend_id).first()
+                    if ur: all_users.append(ur.user.username) 
         data = {}
         data['user'] = all_users
         return Response(data=data, status=status.HTTP_200_OK) 
@@ -454,9 +485,10 @@ class FriendsLeaderboardView(APIView):
 
         if request.user.login_role == 'facebook' and SocialAccount.objects.filter(user=request.user).exists():
             user = SocialAccount.objects.get(user=request.user)
-            for i in range(len(user.extra_data['friends']['data'])):
-                friend_user = UserData.objects.filter(first_name=user.extra_data['friends']['data'][i]['name']).first()
-                if friend_user: all_users.append(friend_user.username)
+            if 'friends' in user.extra_data:
+                for i in range(len(user.extra_data['friends']['data'])):
+                    friend_user = UserData.objects.filter(first_name=user.extra_data['friends']['data'][i]['name']).first()
+                    if friend_user: all_users.append(friend_user.username)
 
         data = []
         if not request.query_params.get('key'):
@@ -563,9 +595,9 @@ class FaceBookFriendListView(APIView):
             user = SocialAccount.objects.get(user=request.user)
             # print("---------GET user---------",user.extra_data['friends']['data'][0]['id'])
             # ur = SocialAccount.objects.get(uid=user.extra_data['friends']['data'][0]['id'])
-
-            for i in range(len(user.extra_data['friends']['data'])):
-                friends.append(user.extra_data['friends']['data'][i]['name'])
+            if 'friends' in user.extra_data:
+                for i in range(len(user.extra_data['friends']['data'])):
+                    friends.append(user.extra_data['friends']['data'][i]['name'])
       
         return Response(data=dict(enumerate(friends)), status=status.HTTP_200_OK)
 
@@ -589,10 +621,11 @@ class RemoveFriends(APIView):
                 all_users.append(user.sender.username)
 
         if request.user.login_role == 'facebook' and SocialAccount.objects.filter(user=request.user).exists():
-            user = SocialAccount.objects.get(user=request.user)
-            for i in range(len(user.extra_data['friends']['data'])):
-                user = UserData.objects.get(first_name=user.extra_data['friends']['data'][i]['name'])
-                all_users.append(user.username)
+            social_user = SocialAccount.objects.get(user=request.user)
+            if 'friends' in social_user.extra_data:
+                for i in range(len(social_user.extra_data['friends']['data'])):
+                    user = UserData.objects.filter(first_name=social_user.extra_data['friends']['data'][i]['name']).first()
+                    if user: all_users.append(user.username)
 
         return Response(data=dict(enumerate(all_users)), status=status.HTTP_200_OK)
 
@@ -624,7 +657,7 @@ class LeaderboardWiningView(APIView):
     @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
         if request.data.get('winner'):
-            if request.data.get('coins'):
+            if int(request.data.get('coins')):
                 if UserData.objects.filter(username=request.data.get('winner')).exists():
                     
                     user_obj = UserData.objects.get(username=request.data.get('winner'))
@@ -684,9 +717,10 @@ class StrikerView(APIView):
     @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         data = {}
-        
+        username = request.query_params.get('username').strip() if request.query_params.get('username') else request.user.username
+
         # validate user
-        user = UserData.objects.filter(user_id=request.query_params.get('user_id')).first() 
+        user = UserData.objects.filter(username=username).first() 
         if not user:
             return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
         
@@ -702,11 +736,11 @@ class StrikerView(APIView):
     @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
         # get data
-        user_id = request.data.get('user_id') 
+        username = request.data.get('username').strip() if request.data.get('username') else request.user.username
         striker_index = request.data.get('striker_index').split(',') if request.data.get('striker_index') else []
 
         # validate data
-        user = UserData.objects.filter(user_id=user_id).first() 
+        user = UserData.objects.filter(username=username).first() 
         striker_index = Striker.objects.filter(index__in=striker_index, status=1).values_list('index', flat=True)
         if not all([user, striker_index]):
             return Response(create_response(status.HTTP_404_NOT_FOUND,"Data not found."), status=status.HTTP_404_NOT_FOUND)
@@ -730,16 +764,17 @@ class AdPurchaseView(APIView):
     @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         data = {}
-        
+        username = request.query_params.get('username').strip() if request.query_params.get('username') else request.user.username
+
         # Validate user
-        user = UserData.objects.filter(user_id=request.query_params.get('user_id')).first() 
+        user = UserData.objects.filter(username=username).first() 
         if not user:
             return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
         
         # Does user puchase any ad
         ad_purchase_obj = AdPurchase.objects.filter(user=user).first()
         if not ad_purchase_obj:
-            return Response(create_response(status.HTTP_404_NOT_FOUND,f"{user.user_id} does not have ad purchase data."), status=status.HTTP_404_NOT_FOUND)
+            return Response(create_response(status.HTTP_404_NOT_FOUND,f"{user.username} does not have ad purchase data."), status=status.HTTP_404_NOT_FOUND)
 
         # Return user's ad purchase data
         serializer = AdPurchaseSerializer(ad_purchase_obj)
@@ -749,8 +784,10 @@ class AdPurchaseView(APIView):
     
     @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
+        username = request.data.get('username').strip() if request.data.get('username') else request.user.username
+
         # validate user
-        user = UserData.objects.filter(user_id=request.data.get('user_id')).first() 
+        user = UserData.objects.filter(username=username).first() 
         if not user:
             return Response(create_response(status.HTTP_404_NOT_FOUND,"User not found."), status=status.HTTP_404_NOT_FOUND)
         
