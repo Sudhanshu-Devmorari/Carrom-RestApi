@@ -76,27 +76,56 @@ class UserCount(models.Model):
 
 
 class Match(models.Model):
+    TYPE_CHOICES = (
+        (0, 'Online Match'),
+        (1, 'Play With Friends'),
+    )
+
     code = models.CharField(max_length=50)
+    match_type = models.IntegerField(default=None, blank=True, null=True, choices=TYPE_CHOICES) 
     status = models.IntegerField(default=1) # 1: active,0: deactivate
     created_by = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name='match_created_by')
+    start_time = models.DateTimeField(default=None, blank=True, null=True)
+    end_time = models.DateTimeField(default=None, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
+
+
+class MatchCity(models.Model):
+    city = models.CharField(max_length=100)
+    entry_fee = models.IntegerField(default=0)
+    prize = models.IntegerField(default=0)
+    index = models.IntegerField()
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)  
 
 
 class MatchUser(models.Model):
+    STATUS_CHOICES = (
+        (0, 'Pending'),
+        (1, 'Running'),
+        (2, 'Closed'),
+    )
+
     match = models.ForeignKey(Match, on_delete=models.CASCADE)
     user = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name='match_user')
-    status = models.IntegerField(default=1) # 1: active,0: deactivate
+    status = models.IntegerField(default=0, choices=STATUS_CHOICES) 
+    city = models.ForeignKey(MatchCity, on_delete=models.CASCADE, default=None, blank=True, null=True)
+    user_turn = models.BooleanField(default=False)
+    skip_turn = models.BooleanField(default=False)
+    score = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)  
 
 
 class Striker(models.Model):
     index = models.IntegerField(default=0)
     status = models.IntegerField(default=1) # 1: active,0: deactivate
+    prize = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
 
-class UserStriker(models.Model):
+class UserStriker(models.Model): 
     user = models.ForeignKey(UserData, on_delete=models.CASCADE, related_name='user_striker')
     striker = models.ForeignKey(Striker, on_delete=models.CASCADE)
     status = models.IntegerField(default=0) # 1: active,0: deactivate

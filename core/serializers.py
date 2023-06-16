@@ -54,7 +54,7 @@ class RequestGiftSerializer(serializers.ModelSerializer):
 class StrikerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Striker
-        fields = ('index',)
+        fields = ('index', 'prize')
 
 class UserStrikerSerializer(serializers.ModelSerializer):
     user = UserSerializer()

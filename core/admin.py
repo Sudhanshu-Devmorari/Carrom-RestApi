@@ -1,6 +1,6 @@
 from django.contrib import admin
 from core.models import (UserData, UserCount, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift, Match, MatchUser,
-                         Striker, UserStriker, AdPurchase)
+                         Striker, UserStriker, AdPurchase, MatchCity)
 
 # Register your models here.
 
@@ -34,11 +34,11 @@ class RequestGiftdAdmin(admin.ModelAdmin):
 
 @admin.register(Match)
 class MatchdAdmin(admin.ModelAdmin):
-    list_display = ('code','status','created_by')
+    list_display = ('id','code','match_type','status','created_by','start_time','end_time')
 
 @admin.register(MatchUser)
 class MatchUserdAdmin(admin.ModelAdmin):
-    list_display = ('match','user','status')
+    list_display = ('id','match','user','status','city','user_turn','skip_turn','score')
 
 @admin.register(Striker)
 class StrikerAdmin(admin.ModelAdmin):
@@ -51,3 +51,7 @@ class UserStrikerAdmin(admin.ModelAdmin):
 @admin.register(AdPurchase)
 class AdPurchaseAdmin(admin.ModelAdmin):
     list_display = ('user','is_purchase')
+
+@admin.register(MatchCity)
+class MatchCityAdmin(admin.ModelAdmin):
+    list_display = ('city','entry_fee','prize','index')
