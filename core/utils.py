@@ -32,8 +32,10 @@ def country():
     country_name = "Unknown"
     try:
         ip_address = get_ip()
+        print('ip_address: ', ip_address)
         if ip_address:
             response = requests.get(f'https://ipapi.co/{ip_address}/json/').json()
+            print('response: ', response)
             country_name = response.get("country_name", country_name)
         return country_name
     except:
