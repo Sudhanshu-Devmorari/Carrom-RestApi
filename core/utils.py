@@ -19,23 +19,25 @@ from social_core.exceptions import AuthTokenError
 PlayWithFriendEntryFee = 5000
 PlayWithFriendWinningPrize = 10000
 
-def get_public_ip_address():
-    response = requests.get("https://myexternalip.com/raw")
-    return response.text.strip()
+
+def get_ip():
+    try:
+        response = requests.get('https://api64.ipify.org?format=json').json()
+        return response.get("ip", None)
+    except:
+        return None
 
 
 def country():
-    reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
-
-    ip_address = get_public_ip_address()
+    country_name = "Unknown"
     try:
-        response = reader.country(ip_address)
-        country_name = response.country.name
+        ip_address = get_ip()
+        if ip_address:
+            response = requests.get(f'https://ipapi.co/{ip_address}/json/').json()
+            country_name = response.get("country_name", country_name)
         return country_name
-    except geoip2.errors.AddressNotFoundError:
-        print(f"ERROR : The IP address {ip_address} is not found in the database")
-    finally:
-        reader.close()
+    except:
+        return country_name
 
 
 def create_response(stts,msg,data=None):

@@ -29,7 +29,7 @@ class GoogleBackend(BaseBackend):
             try:
                 user = UserData.objects.get(email=kwargs['email'])
                 user.login_type = 'Google'
-                user.country = country()
+                user.country = country() # if necessary, than only use this country otherwise use utils.country
                 user.save()
                 return user
             except UserData.DoesNotExist:
