@@ -20,26 +20,25 @@ PlayWithFriendEntryFee = 5000
 PlayWithFriendWinningPrize = 10000
 
 
-def get_ip():
-    try:
-        response = requests.get('https://api64.ipify.org?format=json').json()
-        return response.get("ip", None)
-    except:
-        return None
+def get_public_ip_address():
+    response = requests.get("https://myexternalip.com/raw")
+    return response.text.strip()
 
 
 def country():
-    country_name = "Unknown"
-    try:
-        ip_address = get_ip()
-        print('ip_address: ', ip_address)
-        if ip_address:
-            response = requests.get(f'https://ipapi.co/{ip_address}/json/').json()
-            print('response: ', response)
-            country_name = response.get("country_name", country_name)
-        return country_name
-    except:
-        return country_name
+    country_name = "India"
+    return country_name
+    # reader = geoip2.database.Reader("GeoLite2-Country.mmdb")
+
+    # ip_address = get_public_ip_address()
+    # try:
+    #     response = reader.country(ip_address)
+    #     country_name = response.country.name
+    #     return country_name
+    # except geoip2.errors.AddressNotFoundError:
+    #     print(f"ERROR : The IP address {ip_address} is not found in the database")
+    # finally:
+    #     reader.close()
 
 
 def create_response(stts,msg,data=None):
