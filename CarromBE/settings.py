@@ -51,7 +51,7 @@ INSTALLED_APPS = [
 
     # rest-framework:
     'rest_framework',
-    # 'rest_framework.authtoken',
+    'rest_framework.authtoken',
 
     # 'rest_auth',
     # 'dj_rest_auth',
@@ -175,16 +175,10 @@ CRONJOBS = [
 ]
 # 0 0 * * 1
 
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': [
-#         'rest_framework.authentication.BasicAuthentication',
-#         'rest_framework.authentication.SessionAuthentication',
-#         # 'rest_framework.authentication.TokenAuthentication'
-#     ],
-#     'DEFAULT_PERMISSION_CLASSES': [
-#         # 'rest_framework.permissions.IsAuthenticated',
-#     ]
-# }
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'core.exception_handler.custom_exception_handler',
+}
+
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',

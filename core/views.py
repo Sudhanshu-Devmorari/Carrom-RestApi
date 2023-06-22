@@ -4,13 +4,12 @@ from django.utils.decorators import method_decorator
 from django.db.models import Q
 
 # From app
-from core.utils import country, create_response, handle_exceptions, validate_facebook_token
-from core.custom_authentication import CsrfExemptSessionAuthentication,CustomFacebookOAuth2Adapter
+from core.utils import country, create_response, handle_exceptions, validate_facebook_token, generate_password, generate_auth_token
 from core.serializers import (UserSerializer, GemsCoinsSerializer, FriendsSerializer, GiftSentSerializer, RequestGiftSerializer,
-                              UserStrikerSerializer, AdPurchaseSerializer, UserAccountDataSerializer)
+                              UserStrikerSerializer, AdPurchaseSerializer, UserAccountDataSerializer, UserAccountDataWithTokenSerializer)
 
 # From rest_framework 
-from rest_framework.authentication import BasicAuthentication 
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -41,15 +40,23 @@ class GuestLoginView(APIView):
                 count += 1
             else:
                 break
-        
+
+        # Manully generate password
+        password = f'Guest_{count:09d}@{count:04d}'
+        encrypted_password = generate_password(password)
+
         # Create user object
         user = UserData(
             login_role = 'guest',
             username = f'Guest_{count:09d}',
             user_id = f'Guest_{count:09d}',
-            country = country_name
+            country = country_name,
+            password = encrypted_password
         )
         user.save()
+        
+        # Generate token for user authentication
+        generate_auth_token(user)
 
         # Assign coins and gems to user
         gemcoin = GemsCoins(user=user, coins=5000, gems=20)
@@ -67,7 +74,7 @@ class GuestLoginView(APIView):
         guest_number.guest = guest_number.guest + 1
         guest_number.save()
         
-        serializer = UserAccountDataSerializer(user)
+        serializer = UserAccountDataWithTokenSerializer(user)
         user_dict = serializer.data
 
         login(request, user)
@@ -76,7 +83,7 @@ class GuestLoginView(APIView):
 
 # @method_decorator(csrf_exempt, name='dispatch')
 class ProfileView(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     
     """
@@ -112,7 +119,10 @@ class ProfileView(APIView):
             user.username = request.data.get('username')
             user.save()
 
-            serializer = UserSerializer(user)
+            # Generate token for user authentication
+            generate_auth_token(user, created=False)
+
+            serializer = UserAccountDataWithTokenSerializer(user)
             data = serializer.data
             return Response(create_response(status.HTTP_200_OK,"Username sucessfully updated.", data=data),status=status.HTTP_200_OK)
         else:
@@ -120,7 +130,7 @@ class ProfileView(APIView):
 
 
 class GemsCoinsView(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     @handle_exceptions
@@ -168,7 +178,7 @@ class GemsCoinsView(APIView):
 
 
 class GuestFriendSearchView(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     """
@@ -225,7 +235,7 @@ class GuestFriendSearchView(APIView):
 
 
 class GuestFriendView(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     
     """
@@ -348,7 +358,7 @@ class GuestFriendView(APIView):
 
 
 class GiftSentView(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     """
@@ -403,7 +413,7 @@ class GiftSentView(APIView):
 
 
 class RequestGiftView(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     @handle_exceptions
@@ -468,6 +478,9 @@ class LeaguesLeaderboardView(APIView):
 
 
 class FriendsLeaderboardView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     """
     API use for retrieve the user's friends list for the Friends Leaderboard.
     """
@@ -530,6 +543,9 @@ class FriendsLeaderboardView(APIView):
 
 
 class CountryLeaderboardView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     """
     API use for retrieve the user's list country wise for the Country Leaderboard.
     """
@@ -586,6 +602,8 @@ class WorldLeaderboardView(APIView):
 
 
 class FaceBookFriendListView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     
     @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
@@ -602,8 +620,9 @@ class FaceBookFriendListView(APIView):
         return Response(data=dict(enumerate(friends)), status=status.HTTP_200_OK)
 
 class RemoveFriends(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+
     """
     Retrive the Friends List.
     """
@@ -649,8 +668,9 @@ class RemoveFriends(APIView):
 
 
 class LeaderboardWiningView(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+
     """
     Create or Get the user and add the winning coins in weekly coins field.
     """
@@ -691,6 +711,8 @@ class GuestLogout(APIView):
 
 # For update the user star level:
 class UpdateStarLevelView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     
     @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
@@ -708,7 +730,7 @@ class CheckView(APIView):
 
 
 class StrikerView(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     """
@@ -755,7 +777,7 @@ class StrikerView(APIView):
 
         
 class AdPurchaseView(APIView):
-    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     """
@@ -809,7 +831,7 @@ class FacebookLoginView(APIView):
         try:
             response = validate_facebook_token(access_token)
             if response['is_token_verified']:
-                serializer = UserAccountDataSerializer(response['user_obj'])
+                serializer = UserAccountDataWithTokenSerializer(response['user_obj'])
                 data = serializer.data
                 
                 login(request, response['user_obj'])

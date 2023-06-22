@@ -1,5 +1,6 @@
 import requests
 import geoip2.database
+from django.contrib.auth.hashers import make_password
 
 # models
 from core.models import UserData, Match, MatchUser, MatchCity, GemsCoins
@@ -10,6 +11,7 @@ from django.db.models import Q
 # rest_framework
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 
 # From all auth
 from allauth.socialaccount.models import SocialAccount
@@ -84,13 +86,21 @@ def validate_facebook_token(access_token):
                 else:
                     break
 
+            # Manully generate password
+            password = f'{user_name}@{count:04d}'
+            encrypted_password = generate_password(password)
+
             # Userdata entry
             user_obj = UserData.objects.create(
                 profile_url = data['picture']['data']['url'] if data['picture']['data']['url'] else "",
                 username = user_name,
                 email = data.get('email', ""),
                 first_name = data['name'],
+                password = encrypted_password
             )
+
+            # Generate token for user authentication
+            generate_auth_token(user_obj)
 
             social_account_obj = SocialAccount.objects.create(user=user_obj, provider='facebook', uid=data.get('id'), extra_data=data)
         
@@ -285,3 +295,18 @@ def handle_exceptions(view_func):
             return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     return wrapped_view
+
+
+def generate_password(password):
+    encrypted_password = make_password(password)
+    return encrypted_password
+
+
+def generate_auth_token(user_obj, created=True):
+    if created:
+        Token.objects.create(user=user_obj)
+    else:
+        old_token = Token.objects.filter(user=user_obj).last()
+        if old_token:
+            old_token.delete()
+        Token.objects.create(user=user_obj)

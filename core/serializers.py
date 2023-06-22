@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from core.models import UserData, GemsCoins, Friends, GiftSent, Leaderboard, RequestGift, UserStriker, Striker, AdPurchase
+from rest_framework.authtoken.models import Token
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -111,3 +112,16 @@ class UserAccountDataSerializer(serializers.Serializer):
 
         merged_data = {**user_model_data, **gems_model_data, **ad_purchase_model_data, **user_striker_model_data}
         return merged_data
+    
+
+class UserAccountDataWithTokenSerializer(serializers.Serializer):
+
+    def to_representation(self, instance):
+        user_account_data = UserAccountDataSerializer(instance).data
+        token_obj = Token.objects.filter(user=instance).first()
+        if not token_obj:
+            raise serializers.ValidationError('No token found.')
+
+        merged_data = {**user_account_data, 'token': token_obj.key}
+        return merged_data
+
