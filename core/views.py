@@ -701,10 +701,13 @@ class LeaderboardWiningView(APIView):
 
 
 class GuestLogout(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     
     @handle_exceptions
     def get(self, request, format=None, *args, **kwargs):
         # print("***", request.user,"***")
+        request.user.auth_token.delete()
         logout(request)
         return Response(create_response(status.HTTP_200_OK, "User successfully logged Out..."), status=status.HTTP_200_OK)
 
