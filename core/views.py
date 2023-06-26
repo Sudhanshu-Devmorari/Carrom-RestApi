@@ -59,7 +59,7 @@ class GuestLoginView(APIView):
         generate_auth_token(user)
 
         # Assign coins and gems to user
-        gemcoin = GemsCoins(user=user, coins=5000, gems=20)
+        gemcoin = GemsCoins(user=user, coins=5000, gems=120)
         gemcoin.save()
 
         # Validate if striker entry exists if not than make new one
