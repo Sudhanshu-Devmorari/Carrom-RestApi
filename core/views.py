@@ -108,6 +108,12 @@ class ProfileView(APIView):
     @handle_exceptions
     def post(self, request, format=None, *args, **kwargs):
         data = {}
+        if not request.data.get('username') and request.data.get('profile_pic_index') in ['', None]:
+            return Response(create_response(status.HTTP_404_NOT_FOUND, "Data not found to update."), status=status.HTTP_404_NOT_FOUND)
+
+        user = UserData.objects.get(id=request.user.id)
+        
+        # Update username
         if request.data.get('username'):
             # Validate uniqueness of username
             AlredayExist = UserData.objects.filter(~Q(id=request.user.id), username=request.data.get('username')).exists()
@@ -115,18 +121,20 @@ class ProfileView(APIView):
                 return Response(create_response(status.HTTP_409_CONFLICT,"A user with this name already exists. Please try another name.", data=data), status=status.HTTP_409_CONFLICT)
 
             # Update username
-            user = UserData.objects.get(username=request.user.username)
             user.username = request.data.get('username')
-            user.save()
+            user.save(update_fields=['username'])
 
             # Generate token for user authentication
             generate_auth_token(user, created=False)
 
-            serializer = UserAccountDataWithTokenSerializer(user)
-            data = serializer.data
-            return Response(create_response(status.HTTP_200_OK,"Username sucessfully updated.", data=data),status=status.HTTP_200_OK)
-        else:
-            return Response(create_response(status.HTTP_404_NOT_FOUND,"Username not found."),status=status.HTTP_404_NOT_FOUND)
+        # Update profile pic
+        if request.data.get('profile_pic_index') not in ['', None]:
+            user.profile_pic = request.data.get('profile_pic_index')
+            user.save(update_fields=['profile_pic'])
+
+        serializer = UserAccountDataWithTokenSerializer(user)
+        data = serializer.data
+        return Response(create_response(status.HTTP_200_OK,"Profile sucessfully updated.", data=data),status=status.HTTP_200_OK)
 
 
 class GemsCoinsView(APIView):

@@ -5,7 +5,7 @@ from django.core.validators import MinLengthValidator
 
 class UserData(AbstractUser):
     login_role = models.CharField(max_length=50, null=True, blank=True)
-    username = models.CharField(unique=True, max_length=16, null=True, blank=True, validators=[MinLengthValidator(2)])
+    username = models.CharField(unique=True, max_length=50, null=True, blank=True, validators=[MinLengthValidator(2)])
     password = models.CharField(null=True, blank=True)
     # email = models.EmailField(unique=True, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
@@ -15,7 +15,7 @@ class UserData(AbstractUser):
     country = models.CharField(max_length=50, null=True, blank=True)
     star_level = models.IntegerField(default=1, null=True, blank=True)
     total_wining = models.IntegerField(null=True, blank=True)
-    profile_pic = models.ImageField(upload_to='profile_pic', null=True, blank=True)
+    profile_pic = models.CharField(default=0)
     profile_url = models.CharField(max_length=500, null=True, blank=True)
     total_match = models.IntegerField(default=0, null=True, blank=True)
     total_win_match = models.IntegerField(default=0,null=True, blank=True)

@@ -93,6 +93,7 @@ def validate_facebook_token(access_token):
             # Userdata entry
             user_obj = UserData.objects.create(
                 profile_url = data['picture']['data']['url'] if data['picture']['data']['url'] else "",
+                profile_pic = data['picture']['data']['url'] if data['picture']['data']['url'] else "",
                 username = user_name,
                 email = data.get('email', ""),
                 first_name = data['name'],

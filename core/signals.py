@@ -33,6 +33,7 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
                 user_obj.country = country()
                 user_obj.user_id = f'{f_name[:10]}_{count:05d}'
                 user_obj.profile_url = social_user_obj.extra_data['picture']
+                user_obj.profile_pic = social_user_obj.extra_data['picture']
                 user_obj.save()
                 
                 # Assign coins and gems to user
