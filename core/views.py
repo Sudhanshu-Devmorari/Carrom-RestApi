@@ -807,7 +807,10 @@ class AdPurchaseView(APIView):
         # Does user puchase any ad
         ad_purchase_obj = AdPurchase.objects.filter(user=user).first()
         if not ad_purchase_obj:
-            return Response(create_response(status.HTTP_404_NOT_FOUND,f"{user.username} does not have ad purchase data."), status=status.HTTP_404_NOT_FOUND)
+            serializer = UserSerializer(user)
+            data = {**serializer.data}
+            data.update({'is_purchase': False})
+            return Response(data=data, status=status.HTTP_200_OK)
 
         # Return user's ad purchase data
         serializer = AdPurchaseSerializer(ad_purchase_obj)
