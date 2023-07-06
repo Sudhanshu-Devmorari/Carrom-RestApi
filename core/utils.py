@@ -281,7 +281,8 @@ def charge_entry_fee(match_user_obj):
         entry_fee = match_user_obj.city.entry_fee
 
     GemsCoins.objects.filter(user_id__in=playre_ids).update(coins=F('coins') - entry_fee)
-    return True
+    coin_data = list(GemsCoins.objects.filter(user_id__in=playre_ids).values('user__username', 'user__user_id', 'coins'))
+    return coin_data
 
 
 def handle_exceptions(view_func):

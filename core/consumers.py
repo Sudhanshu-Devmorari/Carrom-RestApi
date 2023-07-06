@@ -279,7 +279,7 @@ class PlaywithFriendsConsumer(AsyncWebsocketConsumer, CarromPlayGame):
                               params_to_update={'status':1})
                 
                 # charge entry fee to players
-                await charge_entry_fee(pending_match_user)
+                player_coin_data = await charge_entry_fee(pending_match_user)
 
                 # Take random player to send
                 match_data = await self.select_random_player(self.match_obj.id)
@@ -292,7 +292,8 @@ class PlaywithFriendsConsumer(AsyncWebsocketConsumer, CarromPlayGame):
                                  'room': 'join',
                                  'player': match_data['user__user_id'],
                                  'player_user_name': match_data['user__username'],
-                                 'cookie_data': self.cookie_initial_position
+                                 'cookie_data': self.cookie_initial_position,
+                                 'player_coin_data': player_coin_data
                                 })
 
         # Create new room
@@ -397,7 +398,7 @@ class OnlineMatchConsumer(AsyncWebsocketConsumer, CarromPlayGame):
                               params_to_update={'status':1})
             
             # charge entry fee to players
-            await charge_entry_fee(pending_city_match)
+            player_coin_data = await charge_entry_fee(pending_city_match)
             
             # Update start_time of match
             await update_match(params_to_filter={'id': self.match_obj.id},
@@ -411,6 +412,7 @@ class OnlineMatchConsumer(AsyncWebsocketConsumer, CarromPlayGame):
                         'player': match_data['user__user_id'],
                         'player_user_name': match_data['user__username'],
                         'cookie_data': self.cookie_initial_position,
+                        'player_coin_data': player_coin_data,
                         }
 
         # Create a new match
