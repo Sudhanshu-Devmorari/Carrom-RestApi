@@ -258,7 +258,15 @@ class PlaywithFriendsConsumer(AsyncWebsocketConsumer, CarromPlayGame):
         response = {}
         self.is_red = False
         self.is_red_last = False
-        self.group_name = str(self.scope['query_string'], 'UTF-8').split("/")[-1].split("=")[-1]
+
+        group_name = None
+        query_string = self.scope["query_string"].decode("utf-8")
+        for param in query_string.split("&"):
+            key, value = param.split("=")
+            if key == "secure_code":
+                group_name = value
+                break
+        self.group_name = group_name
 
         # Join Room
         if self.group_name:
